@@ -1,0 +1,22 @@
+# Arquivos desnecessários para deploy
+**/.git/**
+**/.gitignore
+**/*.log
+**/node_modules/**
+**/.DS_Store
+**/.vscode/**
+**/.cursor/**
+**/dist/**
+**/*.tmp
+**/*.swp
+**/*.bak
+
+# Manter apenas arquivos essenciais
+!package.json
+!package-lock.json
+!vite.config.ts
+!index.html
+!src/**
+!public/**
+!.vercelignore
+!vercel.json
