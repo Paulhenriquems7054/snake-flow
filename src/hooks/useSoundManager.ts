@@ -83,25 +83,30 @@ class AudioManager {
   }
 
   setMusicVolume(volume: number) {
-    this.musicVolume = volume;
+    // Ensure volume is a valid finite number between 0 and 1
+    const validVolume = Math.max(0, Math.min(1, volume));
+    this.musicVolume = isFinite(validVolume) ? validVolume : 0.3;
     if (this.musicAudio) {
-      this.musicAudio.volume = volume;
+      this.musicAudio.volume = this.musicVolume;
     }
   }
 
   setSoundEffectsVolume(volume: number) {
-    this.soundEffectsVolume = volume;
+    // Ensure volume is a valid finite number between 0 and 1
+    const validVolume = Math.max(0, Math.min(1, volume));
+    this.soundEffectsVolume = isFinite(validVolume) ? validVolume : 0.6;
   }
 
   fadeForPause() {
     if (this.musicAudio) {
-      this.musicAudio.volume = this.musicVolume * 0.3; // 30% of current volume
+      const fadeVolume = this.musicVolume * 0.3;
+      this.musicAudio.volume = isFinite(fadeVolume) ? fadeVolume : 0.1;
     }
   }
 
   fadeForResume() {
     if (this.musicAudio) {
-      this.musicAudio.volume = this.musicVolume;
+      this.musicAudio.volume = isFinite(this.musicVolume) ? this.musicVolume : 0.3;
     }
   }
 
@@ -140,11 +145,15 @@ export function useSoundManager(
 
   // Update volumes when they change
   useEffect(() => {
-    audioManagerRef.current?.setMusicVolume(musicVolume);
+    if (audioManagerRef.current && isFinite(musicVolume)) {
+      audioManagerRef.current.setMusicVolume(musicVolume);
+    }
   }, [musicVolume]);
 
   useEffect(() => {
-    audioManagerRef.current?.setSoundEffectsVolume(soundEffectsVolume);
+    if (audioManagerRef.current && isFinite(soundEffectsVolume)) {
+      audioManagerRef.current.setSoundEffectsVolume(soundEffectsVolume);
+    }
   }, [soundEffectsVolume]);
 
   const playEat = useCallback(() => {

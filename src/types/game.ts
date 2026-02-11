@@ -75,7 +75,8 @@ export interface SaveData {
 }
 
 export const GRID_SIZE = 20;
-export const CELL_COUNT = 20;
+export const MIN_CELL_SIZE = 15; // Tamanho mínimo de célula em pixels
+export const CELL_COUNT = 20; // Valor padrão, será calculado dinamicamente
 
 export const DIFFICULTY_CONFIG: Record<Difficulty, { baseSpeed: number; speedIncrement: number; collisionTolerance: number }> = {
   easy: { baseSpeed: 200, speedIncrement: 8, collisionTolerance: 1 },

@@ -12,6 +12,7 @@ const GameScreen = () => {
   const { settings, updateRecord, saveData, setSaveData } = useSettings();
   const [showGameOver, setShowGameOver] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
+  const [cellCount, setCellCount] = useState(CELL_COUNT);
   const touchRef = useRef<{ x: number; y: number } | null>(null);
   const [touchFeedback, setTouchFeedback] = useState<{ x: number; y: number } | null>(null);
 
@@ -38,6 +39,10 @@ const GameScreen = () => {
     setShowGameOver(true);
   }, [vibrate, playOver]);
 
+  const onCellCountChange = useCallback((newCellCount: number) => {
+    setCellCount(newCellCount);
+  }, []);
+
   const {
     gameState,
     currentTheme,
@@ -47,7 +52,7 @@ const GameScreen = () => {
     resumeSave,
     togglePause,
     getSnapshot,
-  } = useSnakeGame(settings.difficulty, onEatFruit, onGameOver, settings.trainingMode);
+  } = useSnakeGame(settings.difficulty, onEatFruit, onGameOver, settings.trainingMode, cellCount);
 
   // Play phase sound on phase change
   useEffect(() => {
@@ -77,7 +82,7 @@ const GameScreen = () => {
       startGame();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [cellCount]);
 
   // Update record on game over
   useEffect(() => {
@@ -247,7 +252,7 @@ const GameScreen = () => {
 
       {/* Game area */}
       <div className="flex-1 flex items-center justify-center p-2 relative">
-        <GameCanvas gameState={gameState} theme={currentTheme} />
+        <GameCanvas gameState={gameState} theme={currentTheme} onCellCountChange={onCellCountChange} />
 
         {/* Touch feedback indicator */}
         {touchFeedback && (

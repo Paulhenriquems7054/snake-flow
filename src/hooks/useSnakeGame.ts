@@ -6,36 +6,49 @@ import {
   type Difficulty,
   type FruitType,
   CELL_COUNT,
+  MIN_CELL_SIZE,
   DIFFICULTY_CONFIG,
   GAME_THEMES,
   FRUIT_TYPES,
 } from "@/types/game";
 
+// Função para calcular CELL_COUNT dinâmico baseado no tamanho da tela
+function calculateCellCount(containerWidth: number, containerHeight: number): number {
+  const maxCellsX = Math.floor(containerWidth / MIN_CELL_SIZE);
+  const maxCellsY = Math.floor(containerHeight / MIN_CELL_SIZE);
+  return Math.min(maxCellsX, maxCellsY, 50); // Máximo de 50 células para evitar grid muito grande
+}
+
 function randomFruitType(): FruitType {
   return FRUIT_TYPES[Math.floor(Math.random() * FRUIT_TYPES.length)];
 }
 
-function randomFruitPos(snake: Position[]): Position {
+function randomFruitPos(snake: Position[], cellCount: number): Position {
   let pos: Position;
   do {
     pos = {
-      x: Math.floor(Math.random() * CELL_COUNT),
-      y: Math.floor(Math.random() * CELL_COUNT),
+      x: Math.floor(Math.random() * cellCount),
+      y: Math.floor(Math.random() * cellCount),
     };
   } while (snake.some((s) => s.x === pos.x && s.y === pos.y));
   return pos;
 }
 
-const INITIAL_SNAKE: Position[] = [
-  { x: 10, y: 10 },
-  { x: 9, y: 10 },
-  { x: 8, y: 10 },
-];
+function createInitialSnake(cellCount: number): Position[] {
+  const centerX = Math.floor(cellCount / 2);
+  const centerY = Math.floor(cellCount / 2);
+  return [
+    { x: centerX, y: centerY },
+    { x: centerX - 1, y: centerY },
+    { x: centerX - 2, y: centerY },
+  ];
+}
 
-function createInitialState(): GameState {
+function createInitialState(cellCount: number): GameState {
+  const initialSnake = createInitialSnake(cellCount);
   return {
-    snake: [...INITIAL_SNAKE],
-    fruit: randomFruitPos(INITIAL_SNAKE),
+    snake: [...initialSnake],
+    fruit: randomFruitPos(initialSnake, cellCount),
     fruitType: randomFruitType(),
     direction: "RIGHT",
     score: 0,
@@ -55,14 +68,15 @@ const OPPOSITE: Record<Direction, Direction> = {
   RIGHT: "LEFT",
 };
 
-export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onGameOver: () => void, trainingMode = false) {
-  const [gameState, setGameState] = useState<GameState>(createInitialState);
+export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onGameOver: () => void, trainingMode = false, cellCount = CELL_COUNT) {
+  const [gameState, setGameState] = useState<GameState>(() => createInitialState(cellCount));
   const directionRef = useRef<Direction>("RIGHT");
   const gameLoopRef = useRef<number | null>(null);
   const [phaseAnnounce, setPhaseAnnounce] = useState<number | null>(null);
   const onEatFruitRef = useRef(onEatFruit);
   const onGameOverRef = useRef(onGameOver);
   const trainingModeRef = useRef(trainingMode);
+  const cellCountRef = useRef(cellCount);
 
   const config = DIFFICULTY_CONFIG[difficulty];
 
@@ -96,10 +110,11 @@ export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onG
       }
 
       // Wall wrap-around (teleport to opposite side)
-      if (newHead.x < 0 || newHead.x >= CELL_COUNT || newHead.y < 0 || newHead.y >= CELL_COUNT) {
+      const currentCellCount = cellCountRef.current;
+      if (newHead.x < 0 || newHead.x >= currentCellCount || newHead.y < 0 || newHead.y >= currentCellCount) {
         newHead = {
-          x: (newHead.x + CELL_COUNT) % CELL_COUNT,
-          y: (newHead.y + CELL_COUNT) % CELL_COUNT,
+          x: (newHead.x + currentCellCount) % currentCellCount,
+          y: (newHead.y + currentCellCount) % currentCellCount,
         };
       }
 
@@ -138,7 +153,7 @@ export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onG
       return {
         ...prev,
         snake: newSnake,
-        fruit: ate ? randomFruitPos(newSnake) : prev.fruit,
+        fruit: ate ? randomFruitPos(newSnake, cellCountRef.current) : prev.fruit,
         fruitType: ate ? randomFruitType() : prev.fruitType,
         direction: dir,
         score: newScore,
@@ -176,7 +191,7 @@ export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onG
   }, []);
 
   const startGame = useCallback(() => {
-    const state = createInitialState();
+    const state = createInitialState(cellCountRef.current);
     state.speed = config.baseSpeed;
     state.isRunning = true;
     directionRef.current = "RIGHT";
