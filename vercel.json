@@ -10,6 +10,10 @@
       "dest": "/assets/$1"
     },
     {
+      "src": "/(.*\\.mp3|.*\\.mpeg|.*\\.wav|.*\\.ogg)",
+      "dest": "/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
