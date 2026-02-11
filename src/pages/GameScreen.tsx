@@ -13,6 +13,7 @@ const GameScreen = () => {
   const [showGameOver, setShowGameOver] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [cellCount, setCellCount] = useState(CELL_COUNT);
+  const [gameInitialized, setGameInitialized] = useState(false);
   const touchRef = useRef<{ x: number; y: number } | null>(null);
   const [touchFeedback, setTouchFeedback] = useState<{ x: number; y: number } | null>(null);
 
@@ -54,6 +55,14 @@ const GameScreen = () => {
     getSnapshot,
   } = useSnakeGame(settings.difficulty, onEatFruit, onGameOver, settings.trainingMode, cellCount);
 
+  // Handle cell count changes during gameplay (adjust positions but don't restart)
+  useEffect(() => {
+    if (gameInitialized && gameState.isRunning && !gameState.isGameOver) {
+      // Cell count changes are handled automatically by the useSnakeGame hook
+      // No need to restart the game, just let it adjust positions
+    }
+  }, [cellCount, gameInitialized, gameState.isRunning, gameState.isGameOver]);
+
   // Play phase sound on phase change
   useEffect(() => {
     if (phaseAnnounce) playPhase();
@@ -73,16 +82,19 @@ const GameScreen = () => {
     if (gameState.isGameOver) stopMusic();
   }, [gameState.isGameOver, stopMusic]);
 
-  // Start or resume game on mount
+  // Start or resume game on mount (only once)
   useEffect(() => {
-    if (saveData) {
-      resumeSave(saveData.gameState);
-      setSaveData(null);
-    } else {
-      startGame();
+    if (!gameInitialized) {
+      if (saveData) {
+        resumeSave(saveData.gameState);
+        setSaveData(null);
+      } else {
+        startGame();
+      }
+      setGameInitialized(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cellCount]);
+  }, [gameInitialized]);
 
   // Update record on game over
   useEffect(() => {
