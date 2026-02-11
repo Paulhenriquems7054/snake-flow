@@ -5,7 +5,7 @@ import path from "path";
 // https://vitejs.dev/config/
 // Vercel deployment fix - force cache invalidation
 export default defineConfig(() => ({
-  base: "./",
+  base: "/",
   plugins: [react()],
   resolve: {
     alias: {
