@@ -24,6 +24,7 @@ const GameCanvas = ({ gameState, theme, onCellCountChange }: Props) => {
   const particlesRef = useRef<Particle[]>([]);
   const animFrameRef = useRef<number | null>(null);
   const prevScoreRef = useRef(gameState.score);
+  const prevCellCountRef = useRef<number | null>(null);
 
   const spawnParticles = useCallback((cx: number, cy: number, color: string, emoji: string) => {
     for (let i = 0; i < 10; i++) {
@@ -77,10 +78,12 @@ const GameCanvas = ({ gameState, theme, onCellCountChange }: Props) => {
     const cellSize = Math.floor(Math.min(availableWidth / cellCount, availableHeight / cellCount));
     const totalSize = cellSize * cellCount;
 
-    // Notify parent component of cell count change
-    if (onCellCountChange) {
+    // Notify parent component of cell count change only when significantly different
+    const prevCellCount = prevCellCountRef.current;
+    if (onCellCountChange && (prevCellCount === null || Math.abs(cellCount - prevCellCount) >= 2)) {
       onCellCountChange(cellCount);
     }
+    prevCellCountRef.current = cellCount;
 
     // Use full container space for canvas
     canvas.width = containerWidth;

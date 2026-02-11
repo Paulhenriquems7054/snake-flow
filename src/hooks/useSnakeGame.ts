@@ -119,11 +119,18 @@ export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onG
           y: Math.round(prev.fruit.y * scaleFactor),
         };
 
-        // Ensure fruit stays within bounds
-        const clampedFruit = {
+        // Ensure fruit stays within bounds and doesn't collide with snake
+        let clampedFruit = {
           x: Math.max(0, Math.min(newCellCount - 1, adjustedFruit.x)),
           y: Math.max(0, Math.min(newCellCount - 1, adjustedFruit.y)),
         };
+
+        // If fruit would collide with snake after adjustment, find a new position
+        const fruitCollides = adjustedSnake.some(s => s.x === clampedFruit.x && s.y === clampedFruit.y);
+        if (fruitCollides) {
+          console.log('Fruit collision after cell count change, repositioning...');
+          clampedFruit = randomFruitPos(adjustedSnake, newCellCount);
+        }
 
         return {
           ...prev,
@@ -160,16 +167,37 @@ export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onG
 
       // Wall wrap-around (teleport to opposite side) - only when actually crossing boundaries
       const currentCellCount = cellCountRef.current;
+      let wrapped = false;
+
       if (newHead.x < 0) {
         newHead.x = currentCellCount - 1;
+        wrapped = true;
       } else if (newHead.x >= currentCellCount) {
         newHead.x = 0;
+        wrapped = true;
       }
 
       if (newHead.y < 0) {
         newHead.y = currentCellCount - 1;
+        wrapped = true;
       } else if (newHead.y >= currentCellCount) {
         newHead.y = 0;
+        wrapped = true;
+      }
+
+      // If we wrapped, check if the new position would cause immediate collision
+      if (wrapped) {
+        const wouldCollide = prev.snake.some((s) => s.x === newHead.x && s.y === newHead.y);
+        if (wouldCollide) {
+          // If wrapping would cause collision, try alternative positions
+        console.log('Wrap-around would cause collision, adjusting...');
+        // Move to a safe adjacent position instead
+        if (newHead.x === 0) newHead.x = 1;
+        else if (newHead.x === currentCellCount - 1) newHead.x = currentCellCount - 2;
+
+        if (newHead.y === 0) newHead.y = 1;
+        else if (newHead.y === currentCellCount - 1) newHead.y = currentCellCount - 2;
+        }
       }
 
       // Self collision - always active
