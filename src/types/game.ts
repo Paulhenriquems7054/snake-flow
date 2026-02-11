@@ -88,6 +88,7 @@ export const GAME_THEMES: GameTheme[] = [
   { id: "forest", name: "Forest", bgColor: "#0a1a0a", snakeColor: "#84cc16", snakeHeadColor: "#a3e635", fruitColor: "#ec4899", gridColor: "#152a15", hudBg: "#0e1f0e", hudText: "#84cc16" },
   { id: "cyber", name: "Cyber", bgColor: "#0f0a1a", snakeColor: "#a855f7", snakeHeadColor: "#c084fc", fruitColor: "#14b8a6", gridColor: "#1a1530", hudBg: "#130e22", hudText: "#a855f7" },
   { id: "desert", name: "Desert", bgColor: "#1a1508", snakeColor: "#eab308", snakeHeadColor: "#facc15", fruitColor: "#3b82f6", gridColor: "#2a2510", hudBg: "#1f1a0c", hudText: "#eab308" },
+  { id: "modern", name: "Modern", bgColor: "#E8F5E9", snakeColor: "#4CAF50", snakeHeadColor: "#66BB6A", fruitColor: "#FFD54F", gridColor: "#C8E6C9", hudBg: "#F1F8E9", hudText: "#2E7D32" },
 ];
 
 export const DEFAULT_SETTINGS: Settings = {

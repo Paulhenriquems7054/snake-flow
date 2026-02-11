@@ -44,7 +44,7 @@ function createInitialState(): GameState {
     isRunning: false,
     isPaused: false,
     isGameOver: false,
-    themeIndex: 0,
+    themeIndex: 6, // Modern theme
   };
 }
 

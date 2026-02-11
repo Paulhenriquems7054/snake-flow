@@ -78,9 +78,8 @@ const GameCanvas = ({ gameState, theme }: Props) => {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      // Background
-      ctx.fillStyle = theme.bgColor;
-      ctx.fillRect(0, 0, totalSize, totalSize);
+      // Background with rounded corners
+      drawBoard(ctx, totalSize, totalSize, 0, theme.bgColor);
 
       // Grid
       ctx.strokeStyle = theme.gridColor;
@@ -96,62 +95,11 @@ const GameCanvas = ({ gameState, theme }: Props) => {
         ctx.stroke();
       }
 
-      // Snake body
-      gameState.snake.forEach((seg, i) => {
-        const x = seg.x * cellSize;
-        const y = seg.y * cellSize;
-        const pad = 1;
+      // Snake body - all segments as circles
+      drawSnake(ctx, gameState.snake, cellSize, theme.snakeColor);
 
-        if (i === 0) {
-          ctx.fillStyle = theme.snakeHeadColor;
-          ctx.shadowColor = theme.snakeHeadColor;
-          ctx.shadowBlur = 8;
-          roundRect(ctx, x + pad, y + pad, cellSize - pad * 2, cellSize - pad * 2, 4);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-
-          // Eyes
-          const eyeSize = cellSize * 0.15;
-          ctx.fillStyle = theme.bgColor;
-          const dir = gameState.direction;
-          let ex1: number, ey1: number, ex2: number, ey2: number;
-          const cx = x + cellSize / 2;
-          const cy = y + cellSize / 2;
-          const off = cellSize * 0.2;
-
-          if (dir === "RIGHT") { ex1 = cx + off; ey1 = cy - off; ex2 = cx + off; ey2 = cy + off; }
-          else if (dir === "LEFT") { ex1 = cx - off; ey1 = cy - off; ex2 = cx - off; ey2 = cy + off; }
-          else if (dir === "UP") { ex1 = cx - off; ey1 = cy - off; ex2 = cx + off; ey2 = cy - off; }
-          else { ex1 = cx - off; ey1 = cy + off; ex2 = cx + off; ey2 = cy + off; }
-
-          ctx.beginPath();
-          ctx.arc(ex1, ey1, eyeSize, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(ex2, ey2, eyeSize, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          ctx.fillStyle = theme.snakeColor;
-          const opacity = 1 - (i / gameState.snake.length) * 0.4;
-          ctx.globalAlpha = opacity;
-          roundRect(ctx, x + pad, y + pad, cellSize - pad * 2, cellSize - pad * 2, 3);
-          ctx.fill();
-          ctx.globalAlpha = 1;
-        }
-      });
-
-      // Fruit (emoji)
-      const fx = gameState.fruit.x * cellSize + cellSize / 2;
-      const fy = gameState.fruit.y * cellSize + cellSize / 2;
-      const emoji = FRUIT_EMOJIS[gameState.fruitType];
-      const fontSize = cellSize * 0.75;
-      ctx.font = `${fontSize}px serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.shadowColor = theme.fruitColor;
-      ctx.shadowBlur = 10;
-      ctx.fillText(emoji, fx, fy);
-      ctx.shadowBlur = 0;
+      // Fruit (circle)
+      drawFood(ctx, gameState.fruit, cellSize, theme.fruitColor);
 
       // Particles
       const particles = particlesRef.current;
@@ -213,18 +161,48 @@ const GameCanvas = ({ gameState, theme }: Props) => {
   );
 };
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+
+function drawBoard(ctx: CanvasRenderingContext2D, width: number, height: number, padding: number, backgroundColor: string) {
+  ctx.fillStyle = backgroundColor;
+
+  const radius = 40;
+
   ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.moveTo(padding + radius, padding);
+  ctx.arcTo(width - padding, padding, width - padding, height - padding, radius);
+  ctx.arcTo(width - padding, height - padding, padding, height - padding, radius);
+  ctx.arcTo(padding, height - padding, padding, padding, radius);
+  ctx.arcTo(padding, padding, width - padding, padding, radius);
   ctx.closePath();
+  ctx.fill();
+}
+
+function drawSnake(ctx: CanvasRenderingContext2D, snake: Position[], cellSize: number, snakeColor: string) {
+  ctx.fillStyle = snakeColor;
+  ctx.imageSmoothingEnabled = true;
+
+  snake.forEach(segment => {
+    const cx = segment.x * cellSize + cellSize / 2;
+    const cy = segment.y * cellSize + cellSize / 2;
+    const radius = cellSize / 2.3;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function drawFood(ctx: CanvasRenderingContext2D, food: Position, cellSize: number, foodColor: string) {
+  ctx.fillStyle = foodColor;
+  ctx.imageSmoothingEnabled = true;
+
+  const cx = food.x * cellSize + cellSize / 2;
+  const cy = food.y * cellSize + cellSize / 2;
+  const radius = cellSize / 2.5;
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 export default GameCanvas;

@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        game: ["Orbitron", "monospace"],
-        body: ["Inter", "sans-serif"],
+        game: ["Nunito", "Poppins", "sans-serif"],
+        body: ["Poppins", "Nunito", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

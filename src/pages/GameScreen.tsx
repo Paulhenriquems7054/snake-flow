@@ -4,13 +4,11 @@ import { Pause, Play, Save, ArrowLeft } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useSnakeGame } from "@/hooks/useSnakeGame";
 import { useSoundManager } from "@/hooks/useSoundManager";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { CELL_COUNT, type Direction, type SaveData } from "@/types/game";
 import GameCanvas from "@/components/GameCanvas";
 
 const GameScreen = () => {
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const { settings, updateRecord, saveData, setSaveData } = useSettings();
   const [showGameOver, setShowGameOver] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
@@ -105,6 +103,7 @@ const GameScreen = () => {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [gameState.isRunning, gameState.isGameOver, getSnapshot, settings.difficulty]);
 
+
   // Keyboard controls
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -113,10 +112,6 @@ const GameScreen = () => {
         ArrowDown: "DOWN",
         ArrowLeft: "LEFT",
         ArrowRight: "RIGHT",
-        w: "UP",
-        s: "DOWN",
-        a: "LEFT",
-        d: "RIGHT",
       };
       if (map[e.key]) {
         e.preventDefault();
@@ -335,89 +330,6 @@ const GameScreen = () => {
           </div>
         )}
 
-        {/* Virtual controls for mobile */}
-        {isMobile && gameState.isRunning && !gameState.isPaused && !gameState.isGameOver && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
-            <div className="grid grid-cols-3 gap-2">
-              {/* Empty cell */}
-              <div></div>
-              {/* Up button */}
-              <button
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  changeDirection("UP");
-                  vibrate(20);
-                }}
-                className="w-12 h-12 rounded-lg border-2 transition-all active:scale-95 active:opacity-80"
-                style={{
-                  backgroundColor: currentTheme.hudBg,
-                  borderColor: currentTheme.snakeColor,
-                  color: currentTheme.hudText
-                }}
-              >
-                ↑
-              </button>
-              {/* Empty cell */}
-              <div></div>
-
-              {/* Left button */}
-              <button
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  changeDirection("LEFT");
-                  vibrate(20);
-                }}
-                className="w-12 h-12 rounded-lg border-2 transition-all active:scale-95 active:opacity-80"
-                style={{
-                  backgroundColor: currentTheme.hudBg,
-                  borderColor: currentTheme.snakeColor,
-                  color: currentTheme.hudText
-                }}
-              >
-                ←
-              </button>
-              {/* Empty cell */}
-              <div></div>
-              {/* Right button */}
-              <button
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  changeDirection("RIGHT");
-                  vibrate(20);
-                }}
-                className="w-12 h-12 rounded-lg border-2 transition-all active:scale-95 active:opacity-80"
-                style={{
-                  backgroundColor: currentTheme.hudBg,
-                  borderColor: currentTheme.snakeColor,
-                  color: currentTheme.hudText
-                }}
-              >
-                →
-              </button>
-
-              {/* Empty cell */}
-              <div></div>
-              {/* Down button */}
-              <button
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  changeDirection("DOWN");
-                  vibrate(20);
-                }}
-                className="w-12 h-12 rounded-lg border-2 transition-all active:scale-95 active:opacity-80"
-                style={{
-                  backgroundColor: currentTheme.hudBg,
-                  borderColor: currentTheme.snakeColor,
-                  color: currentTheme.hudText
-                }}
-              >
-                ↓
-              </button>
-              {/* Empty cell */}
-              <div></div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
