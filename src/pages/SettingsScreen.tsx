@@ -32,17 +32,21 @@ const SettingsScreen = () => {
       <div className="flex flex-col gap-6 p-5 max-w-md mx-auto w-full animate-fade-in">
         {/* Audio */}
         <Section title="🔊 Audio">
-          <ToggleRow
+          <VolumeRow
             label="Music"
             icon={settings.musicOn ? Volume2 : VolumeX}
             active={settings.musicOn}
+            volume={settings.musicVolume}
             onToggle={() => updateSettings({ musicOn: !settings.musicOn })}
+            onVolumeChange={(volume) => updateSettings({ musicVolume: volume })}
           />
-          <ToggleRow
+          <VolumeRow
             label="Sound Effects"
             icon={settings.soundEffectsOn ? Volume2 : VolumeX}
             active={settings.soundEffectsOn}
+            volume={settings.soundEffectsVolume}
             onToggle={() => updateSettings({ soundEffectsOn: !settings.soundEffectsOn })}
+            onVolumeChange={(volume) => updateSettings({ soundEffectsVolume: volume })}
           />
         </Section>
 
@@ -167,6 +171,66 @@ function ToggleRow({
         />
       </div>
     </button>
+  );
+}
+
+function VolumeRow({
+  label,
+  icon: Icon,
+  active,
+  volume,
+  onToggle,
+  onVolumeChange,
+}: {
+  label: string;
+  icon: typeof Volume2;
+  active: boolean;
+  volume: number;
+  onToggle: () => void;
+  onVolumeChange: (volume: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2 px-4 py-3 rounded-xl bg-card border border-border">
+      <button
+        onClick={onToggle}
+        className="flex items-center justify-between w-full"
+      >
+        <div className="flex items-center gap-3">
+          <Icon className={`w-5 h-5 ${active ? "text-primary" : "text-muted-foreground"}`} />
+          <span className="text-sm font-medium text-foreground">{label}</span>
+        </div>
+        <div
+          className={`w-11 h-6 rounded-full transition-colors duration-200 relative ${
+            active ? "bg-primary" : "bg-muted"
+          }`}
+        >
+          <div
+            className={`absolute top-0.5 w-5 h-5 rounded-full bg-primary-foreground shadow transition-transform duration-200 ${
+              active ? "translate-x-5" : "translate-x-0.5"
+            }`}
+          />
+        </div>
+      </button>
+
+      {active && (
+        <div className="flex items-center gap-3">
+          <VolumeX className="w-4 h-4 text-muted-foreground" />
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            value={volume}
+            onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+            className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer slider"
+          />
+          <Volume2 className="w-4 h-4 text-primary" />
+          <span className="text-xs text-muted-foreground w-8 text-center">
+            {Math.round(volume * 100)}%
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 

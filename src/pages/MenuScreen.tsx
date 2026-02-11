@@ -6,7 +6,7 @@ import { useSoundManager } from "@/hooks/useSoundManager";
 const MenuScreen = () => {
   const navigate = useNavigate();
   const { record, saveData, setSaveData } = useSettings();
-  const { playMenuSelect } = useSoundManager(true, true); // Always play menu sounds
+  const { playMenuSelect } = useSoundManager(true, 0.3, true, 0.6); // Always play menu sounds
 
   const hasSave = !!saveData;
 

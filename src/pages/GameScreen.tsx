@@ -16,7 +16,7 @@ const GameScreen = () => {
   const [touchFeedback, setTouchFeedback] = useState<{ x: number; y: number } | null>(null);
 
   const { playEat, playOver, playPhase, pauseMusic, resumeMusic, stopMusic } =
-    useSoundManager(settings.musicOn, settings.soundEffectsOn);
+    useSoundManager(settings.musicOn, settings.musicVolume, settings.soundEffectsOn, settings.soundEffectsVolume);
 
   const vibrate = useCallback(
     (ms: number) => {

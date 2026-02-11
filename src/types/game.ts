@@ -4,7 +4,7 @@ export type Difficulty = "easy" | "medium" | "hard";
 
 export type AppTheme = "system" | "light" | "dark";
 
-export type GameThemeId = "classic" | "ocean" | "lava" | "forest" | "cyber" | "desert";
+export type GameThemeId = "classic" | "ocean" | "lava" | "forest" | "cyber" | "desert" | "modern";
 
 export interface Position {
   x: number;
@@ -52,7 +52,9 @@ export interface GameState {
 
 export interface Settings {
   musicOn: boolean;
+  musicVolume: number; // 0-1
   soundEffectsOn: boolean;
+  soundEffectsVolume: number; // 0-1
   appTheme: AppTheme;
   gameThemeMode: "auto";
   vibrationOn: boolean;
@@ -93,7 +95,9 @@ export const GAME_THEMES: GameTheme[] = [
 
 export const DEFAULT_SETTINGS: Settings = {
   musicOn: true,
+  musicVolume: 0.3,
   soundEffectsOn: true,
+  soundEffectsVolume: 0.6,
   appTheme: "dark",
   gameThemeMode: "auto",
   vibrationOn: true,

@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback } from "react";
-import { type GameState, type GameTheme, CELL_COUNT, FRUIT_EMOJIS } from "@/types/game";
+import { type GameState, type GameTheme, type Position, CELL_COUNT, FRUIT_EMOJIS } from "@/types/game";
 
 interface Particle {
   x: number;
@@ -62,12 +62,17 @@ const GameCanvas = ({ gameState, theme }: Props) => {
     const container = containerRef.current;
     if (!canvas || !container) return;
 
-    const size = Math.min(container.clientWidth, container.clientHeight);
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+
+    // Use the full available space
+    const size = Math.min(containerWidth, containerHeight);
     const cellSize = Math.floor(size / CELL_COUNT);
     const totalSize = cellSize * CELL_COUNT;
 
-    canvas.width = totalSize;
-    canvas.height = totalSize;
+    // Set canvas to full container size for proper scaling
+    canvas.width = containerWidth;
+    canvas.height = containerHeight;
 
     let lastTime = performance.now();
 
@@ -77,6 +82,22 @@ const GameCanvas = ({ gameState, theme }: Props) => {
 
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
+
+      // Calculate scaling and centering for current frame
+      const scale = Math.min(containerWidth / totalSize, containerHeight / totalSize);
+      const scaledSize = totalSize * scale;
+      const offsetX = (containerWidth - scaledSize) / 2;
+      const offsetY = (containerHeight - scaledSize) / 2;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Save context state
+      ctx.save();
+
+      // Apply scaling and centering
+      ctx.translate(offsetX, offsetY);
+      ctx.scale(scale, scale);
 
       // Background with rounded corners
       drawBoard(ctx, totalSize, totalSize, 0, theme.bgColor);
@@ -133,6 +154,9 @@ const GameCanvas = ({ gameState, theme }: Props) => {
         }
         ctx.globalAlpha = 1;
       }
+
+      // Restore context state
+      ctx.restore();
 
       // Keep animating if particles exist
       if (particles.length > 0) {

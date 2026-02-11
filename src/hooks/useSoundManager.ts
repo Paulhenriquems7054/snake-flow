@@ -13,7 +13,8 @@ class AudioManager {
   private audioCache: Map<string, HTMLAudioElement> = new Map();
   private musicAudio: HTMLAudioElement | null = null;
   private isMusicPlaying = false;
-  private currentVolume = 0.06;
+  private musicVolume = 0.3;
+  private soundEffectsVolume = 0.6;
 
   private loadAudio(src: string): HTMLAudioElement {
     if (!this.audioCache.has(src)) {
@@ -38,19 +39,19 @@ class AudioManager {
   }
 
   playEatSound() {
-    this.playSound(AUDIO_FILES.eat, 0.4);
+    this.playSound(AUDIO_FILES.eat, this.soundEffectsVolume * 0.7); // Slightly lower for eat sound
   }
 
   playGameOverSound() {
-    this.playSound(AUDIO_FILES.gameOver, 0.5);
+    this.playSound(AUDIO_FILES.gameOver, this.soundEffectsVolume * 0.8); // Game over slightly louder
   }
 
   playPhaseSound() {
-    this.playSound(AUDIO_FILES.phaseChange, 0.4);
+    this.playSound(AUDIO_FILES.phaseChange, this.soundEffectsVolume * 0.6);
   }
 
   playMenuSelectSound() {
-    this.playSound(AUDIO_FILES.menuSelect, 0.3);
+    this.playSound(AUDIO_FILES.menuSelect, this.soundEffectsVolume * 0.5); // Menu sounds quieter
   }
 
   startMusic() {
@@ -60,7 +61,7 @@ class AudioManager {
       if (!this.musicAudio) {
         this.musicAudio = this.loadAudio(AUDIO_FILES.music);
         this.musicAudio.loop = true;
-        this.musicAudio.volume = this.currentVolume;
+        this.musicAudio.volume = this.musicVolume;
       }
 
       this.musicAudio.play().then(() => {
@@ -82,18 +83,26 @@ class AudioManager {
   }
 
   setMusicVolume(volume: number) {
-    this.currentVolume = volume;
+    this.musicVolume = volume;
     if (this.musicAudio) {
       this.musicAudio.volume = volume;
     }
   }
 
+  setSoundEffectsVolume(volume: number) {
+    this.soundEffectsVolume = volume;
+  }
+
   fadeForPause() {
-    this.setMusicVolume(0.02); // ~30% of normal
+    if (this.musicAudio) {
+      this.musicAudio.volume = this.musicVolume * 0.3; // 30% of current volume
+    }
   }
 
   fadeForResume() {
-    this.setMusicVolume(0.06);
+    if (this.musicAudio) {
+      this.musicAudio.volume = this.musicVolume;
+    }
   }
 
   // Clean up method
@@ -104,7 +113,12 @@ class AudioManager {
   }
 }
 
-export function useSoundManager(musicOn: boolean, soundEffectsOn: boolean) {
+export function useSoundManager(
+  musicOn: boolean,
+  musicVolume: number,
+  soundEffectsOn: boolean,
+  soundEffectsVolume: number
+) {
   const audioManagerRef = useRef<AudioManager | null>(null);
 
   // Initialize audio manager
@@ -123,6 +137,15 @@ export function useSoundManager(musicOn: boolean, soundEffectsOn: boolean) {
       audioManagerRef.current?.stopMusic();
     }
   }, [musicOn]);
+
+  // Update volumes when they change
+  useEffect(() => {
+    audioManagerRef.current?.setMusicVolume(musicVolume);
+  }, [musicVolume]);
+
+  useEffect(() => {
+    audioManagerRef.current?.setSoundEffectsVolume(soundEffectsVolume);
+  }, [soundEffectsVolume]);
 
   const playEat = useCallback(() => {
     if (soundEffectsOn) audioManagerRef.current?.playEatSound();

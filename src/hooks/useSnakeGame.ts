@@ -95,28 +95,20 @@ export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onG
         case "RIGHT": newHead = { x: head.x + 1, y: head.y }; break;
       }
 
-      // Wall collision (skip in training mode)
+      // Wall wrap-around (teleport to opposite side)
       if (newHead.x < 0 || newHead.x >= CELL_COUNT || newHead.y < 0 || newHead.y >= CELL_COUNT) {
-        if (trainingModeRef.current) {
-          // Wrap around
-          newHead = {
-            x: (newHead.x + CELL_COUNT) % CELL_COUNT,
-            y: (newHead.y + CELL_COUNT) % CELL_COUNT,
-          };
-        } else {
-          onGameOverRef.current();
-          return { ...prev, isRunning: false, isGameOver: true };
-        }
+        newHead = {
+          x: (newHead.x + CELL_COUNT) % CELL_COUNT,
+          y: (newHead.y + CELL_COUNT) % CELL_COUNT,
+        };
       }
 
-      // Self collision (skip in training mode)
-      if (!trainingModeRef.current) {
-        const tolerance = config.collisionTolerance;
-        const bodyToCheck = prev.snake.slice(0, prev.snake.length - tolerance);
-        if (bodyToCheck.some((s) => s.x === newHead.x && s.y === newHead.y)) {
-          onGameOverRef.current();
-          return { ...prev, isRunning: false, isGameOver: true };
-        }
+      // Self collision - always active
+      const tolerance = config.collisionTolerance;
+      const bodyToCheck = prev.snake.slice(0, prev.snake.length - tolerance);
+      if (bodyToCheck.some((s) => s.x === newHead.x && s.y === newHead.y)) {
+        onGameOverRef.current();
+        return { ...prev, isRunning: false, isGameOver: true };
       }
 
       const ate = newHead.x === prev.fruit.x && newHead.y === prev.fruit.y;
