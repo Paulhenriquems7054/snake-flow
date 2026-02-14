@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { type Settings, type RecordData, type SaveData, DEFAULT_SETTINGS } from "@/types/game";
+import i18n from "@/i18n";
 
 interface SettingsContextType {
   settings: Settings;
@@ -26,9 +27,10 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<Settings>(() =>
-    loadFromStorage(SETTINGS_KEY, DEFAULT_SETTINGS)
-  );
+  const [settings, setSettings] = useState<Settings>(() => {
+    const stored = loadFromStorage(SETTINGS_KEY, DEFAULT_SETTINGS) as Partial<Settings>;
+    return { ...DEFAULT_SETTINGS, ...stored };
+  });
   const [record, setRecord] = useState<RecordData>(() =>
     loadFromStorage(RECORD_KEY, { highScore: 0, maxPhase: 1, difficulty: "medium" as const })
   );
@@ -40,6 +42,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     applyAppTheme(settings.appTheme);
   }, [settings]);
+
+  useEffect(() => {
+    // Keep i18n language in sync with settings
+    i18n.changeLanguage(settings.language);
+  }, [settings.language]);
 
   useEffect(() => {
     localStorage.setItem(RECORD_KEY, JSON.stringify(record));

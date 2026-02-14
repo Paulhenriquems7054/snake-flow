@@ -1,15 +1,17 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Trophy, Flag, Gauge } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useTranslation } from "react-i18next";
 
 const RecordScreen = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { record } = useSettings();
 
   const stats = [
-    { label: "High Score", value: record.highScore, icon: Trophy, color: "text-primary" },
-    { label: "Max Phase", value: record.maxPhase, icon: Flag, color: "text-accent" },
-    { label: "Difficulty", value: record.difficulty.charAt(0).toUpperCase() + record.difficulty.slice(1), icon: Gauge, color: "text-neon-green" },
+    { label: t("Best Score"), value: record.highScore, icon: Trophy, color: "text-primary" },
+    { label: t("Max Phase"), value: record.maxPhase, icon: Flag, color: "text-accent" },
+    { label: t("Achieved Difficulty"), value: t(record.difficulty.charAt(0).toUpperCase() + record.difficulty.slice(1)), icon: Gauge, color: "text-neon-green" },
   ];
 
   return (
@@ -18,7 +20,7 @@ const RecordScreen = () => {
         <button onClick={() => navigate("/menu")} className="p-2 rounded-lg hover:bg-muted transition-colors">
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
-        <h1 className="font-game text-lg tracking-wider text-foreground">Record</h1>
+        <h1 className="font-game text-lg tracking-wider text-foreground">{t("Record")}</h1>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center gap-6 p-6 animate-fade-in">

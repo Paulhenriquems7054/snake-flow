@@ -1,22 +1,24 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Volume2, VolumeX, Sun, Moon, Monitor, Smartphone, Gamepad2 } from "lucide-react";
+import { ArrowLeft, Languages, Volume2, VolumeX, Sun, Moon, Monitor, Smartphone, Gamepad2 } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useTranslation } from "react-i18next";
 import type { AppTheme, Difficulty } from "@/types/game";
 
 const SettingsScreen = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { settings, updateSettings } = useSettings();
 
   const appThemes: { value: AppTheme; label: string; icon: typeof Sun }[] = [
-    { value: "system", label: "System", icon: Monitor },
-    { value: "light", label: "Light", icon: Sun },
-    { value: "dark", label: "Dark", icon: Moon },
+    { value: "system", label: t("System"), icon: Monitor },
+    { value: "light", label: t("Light"), icon: Sun },
+    { value: "dark", label: t("Dark"), icon: Moon },
   ];
 
   const difficulties: { value: Difficulty; label: string; desc: string }[] = [
-    { value: "easy", label: "Easy", desc: "Slow speed, gentle progression" },
-    { value: "medium", label: "Medium", desc: "Balanced speed and progression" },
-    { value: "hard", label: "Hard", desc: "Fast speed, aggressive progression" },
+    { value: "easy", label: t("Easy"), desc: t("Slow speed, gentle progression") },
+    { value: "medium", label: t("Medium"), desc: t("Balanced speed and progression") },
+    { value: "hard", label: t("Hard"), desc: t("Fast speed, aggressive progression") },
   ];
 
   return (
@@ -26,14 +28,14 @@ const SettingsScreen = () => {
         <button onClick={() => navigate("/menu")} className="p-2 rounded-lg hover:bg-muted transition-colors">
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
-        <h1 className="font-game text-lg tracking-wider text-foreground">Settings</h1>
+        <h1 className="font-game text-lg tracking-wider text-foreground">{t("Settings")}</h1>
       </div>
 
       <div className="flex flex-col gap-6 p-5 max-w-md mx-auto w-full animate-fade-in">
         {/* Audio */}
-        <Section title="🔊 Audio">
+        <Section title={t("Audio")}>
           <VolumeRow
-            label="Music"
+            label={t("Music")}
             icon={settings.musicOn ? Volume2 : VolumeX}
             active={settings.musicOn}
             volume={settings.musicVolume}
@@ -41,7 +43,7 @@ const SettingsScreen = () => {
             onVolumeChange={(volume) => updateSettings({ musicVolume: volume })}
           />
           <VolumeRow
-            label="Sound Effects"
+            label={t("Sound Effects")}
             icon={settings.soundEffectsOn ? Volume2 : VolumeX}
             active={settings.soundEffectsOn}
             volume={settings.soundEffectsVolume}
@@ -50,8 +52,36 @@ const SettingsScreen = () => {
           />
         </Section>
 
+        {/* Language */}
+        <Section title={t("Language")}>
+          <div className="flex gap-2">
+            <button
+              onClick={() => updateSettings({ language: "pt" })}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border transition-all duration-200 ${
+                settings.language === "pt"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:border-primary/30"
+              }`}
+            >
+              <Languages className="w-5 h-5" />
+              <span className="text-xs font-medium">{t("Portuguese")}</span>
+            </button>
+            <button
+              onClick={() => updateSettings({ language: "en" })}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border transition-all duration-200 ${
+                settings.language === "en"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:border-primary/30"
+              }`}
+            >
+              <Languages className="w-5 h-5" />
+              <span className="text-xs font-medium">{t("English")}</span>
+            </button>
+          </div>
+        </Section>
+
         {/* App Theme */}
-        <Section title="🌗 App Theme">
+        <Section title={t("App Theme")}>
           <div className="flex gap-2">
             {appThemes.map((t) => (
               <button
@@ -75,16 +105,16 @@ const SettingsScreen = () => {
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card border border-border">
             <Gamepad2 className="w-5 h-5 text-primary" />
             <div>
-              <p className="text-sm font-medium text-foreground">Auto (by phase)</p>
-              <p className="text-xs text-muted-foreground">Changes every 3 phases</p>
+              <p className="text-sm font-medium text-foreground">{t("Auto (by phase)")}</p>
+              <p className="text-xs text-muted-foreground">{t("Changes every 3 phases")}</p>
             </div>
           </div>
         </Section>
 
         {/* Vibration */}
-        <Section title="📳 Vibration">
+        <Section title={t("Vibration")}>
           <ToggleRow
-            label="Vibration"
+            label={t("Vibration")}
             icon={Smartphone}
             active={settings.vibrationOn}
             onToggle={() => updateSettings({ vibrationOn: !settings.vibrationOn })}
@@ -92,18 +122,18 @@ const SettingsScreen = () => {
         </Section>
 
         {/* Training Mode */}
-        <Section title="🎓 Training Mode">
+        <Section title={t("Training Mode")}>
           <ToggleRow
-            label="Training Mode"
+            label={t("Training Mode")}
             icon={Gamepad2}
             active={settings.trainingMode}
             onToggle={() => updateSettings({ trainingMode: !settings.trainingMode })}
           />
-          <p className="text-xs text-muted-foreground px-1">No game over, walls wrap around. Perfect for practice.</p>
+          <p className="text-xs text-muted-foreground px-1">{t("No game over, walls wrap around. Perfect for practice.")}</p>
         </Section>
 
         {/* Difficulty */}
-        <Section title="🎚 Difficulty">
+        <Section title={t("Difficulty")}>
           <div className="flex flex-col gap-2">
             {difficulties.map((d) => (
               <button

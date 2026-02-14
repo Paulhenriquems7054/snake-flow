@@ -5,6 +5,7 @@ import {
   type Position,
   type Difficulty,
   type FruitType,
+  type BoardSize,
   CELL_COUNT,
   MIN_CELL_SIZE,
   DIFFICULTY_CONFIG,
@@ -23,20 +24,20 @@ function randomFruitType(): FruitType {
   return FRUIT_TYPES[Math.floor(Math.random() * FRUIT_TYPES.length)];
 }
 
-function randomFruitPos(snake: Position[], cellCount: number): Position {
+function randomFruitPos(snake: Position[], cols: number, rows: number): Position {
   let pos: Position;
   do {
     pos = {
-      x: Math.floor(Math.random() * cellCount),
-      y: Math.floor(Math.random() * cellCount),
+      x: Math.floor(Math.random() * cols),
+      y: Math.floor(Math.random() * rows),
     };
   } while (snake.some((s) => s.x === pos.x && s.y === pos.y));
   return pos;
 }
 
-function createInitialSnake(cellCount: number): Position[] {
-  const centerX = Math.floor(cellCount / 2);
-  const centerY = Math.floor(cellCount / 2);
+function createInitialSnake(cols: number, rows: number): Position[] {
+  const centerX = Math.floor(cols / 2);
+  const centerY = Math.floor(rows / 2);
   return [
     { x: centerX, y: centerY },
     { x: centerX - 1, y: centerY },
@@ -44,11 +45,11 @@ function createInitialSnake(cellCount: number): Position[] {
   ];
 }
 
-function createInitialState(cellCount: number): GameState {
-  const initialSnake = createInitialSnake(cellCount);
+function createInitialState(cols: number, rows: number): GameState {
+  const initialSnake = createInitialSnake(cols, rows);
   return {
     snake: [...initialSnake],
-    fruit: randomFruitPos(initialSnake, cellCount),
+    fruit: randomFruitPos(initialSnake, cols, rows),
     fruitType: randomFruitType(),
     direction: "RIGHT",
     score: 0,
@@ -68,16 +69,27 @@ const OPPOSITE: Record<Direction, Direction> = {
   RIGHT: "LEFT",
 };
 
-export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onGameOver: () => void, trainingMode = false, cellCount = CELL_COUNT) {
-  const [gameState, setGameState] = useState<GameState>(() => createInitialState(cellCount));
+export function useSnakeGame(
+  difficulty: Difficulty,
+  onEatFruit: () => void,
+  onGameOver: () => void,
+  trainingMode = false,
+  boardSizeOrCellCount: BoardSize | number = CELL_COUNT
+) {
+  const initialBoard: BoardSize =
+    typeof boardSizeOrCellCount === "number"
+      ? { cols: boardSizeOrCellCount, rows: boardSizeOrCellCount }
+      : boardSizeOrCellCount;
+
+  const [gameState, setGameState] = useState<GameState>(() => createInitialState(initialBoard.cols, initialBoard.rows));
   const directionRef = useRef<Direction>("RIGHT");
   const gameLoopRef = useRef<number | null>(null);
   const [phaseAnnounce, setPhaseAnnounce] = useState<number | null>(null);
   const onEatFruitRef = useRef(onEatFruit);
   const onGameOverRef = useRef(onGameOver);
   const trainingModeRef = useRef(trainingMode);
-  const cellCountRef = useRef(cellCount);
-  const prevCellCountRef = useRef(cellCount);
+  const boardSizeRef = useRef<BoardSize>(initialBoard);
+  const prevBoardSizeRef = useRef<BoardSize>(initialBoard);
 
   const config = DIFFICULTY_CONFIG[difficulty];
 
@@ -87,49 +99,56 @@ export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onG
   onEatFruitRef.current = onEatFruit;
   onGameOverRef.current = onGameOver;
   trainingModeRef.current = trainingMode;
-  cellCountRef.current = cellCount;
+  boardSizeRef.current =
+    typeof boardSizeOrCellCount === "number"
+      ? { cols: boardSizeOrCellCount, rows: boardSizeOrCellCount }
+      : boardSizeOrCellCount;
 
   // Adjust positions when cellCount changes to avoid loops
   useEffect(() => {
-    const prevCellCount = prevCellCountRef.current;
-    const newCellCount = cellCount;
+    const prevBoardSize = prevBoardSizeRef.current;
+    const newBoardSize = boardSizeRef.current;
 
-    if (prevCellCount !== newCellCount && prevCellCount > 0) {
+    if (
+      (prevBoardSize.cols !== newBoardSize.cols || prevBoardSize.rows !== newBoardSize.rows) &&
+      prevBoardSize.cols > 0 &&
+      prevBoardSize.rows > 0
+    ) {
       setGameState((prev) => {
         if (!prev.snake.length) return prev;
 
-        // Calculate scaling factor
-        const scaleFactor = newCellCount / prevCellCount;
+        // Calculate scaling factors
+        const scaleX = newBoardSize.cols / prevBoardSize.cols;
+        const scaleY = newBoardSize.rows / prevBoardSize.rows;
 
         // Adjust snake positions proportionally
         const adjustedSnake = prev.snake.map(segment => ({
-          x: Math.round(segment.x * scaleFactor),
-          y: Math.round(segment.y * scaleFactor),
+          x: Math.round(segment.x * scaleX),
+          y: Math.round(segment.y * scaleY),
         }));
 
         // Ensure positions stay within bounds
         const clampedSnake = adjustedSnake.map(segment => ({
-          x: Math.max(0, Math.min(newCellCount - 1, segment.x)),
-          y: Math.max(0, Math.min(newCellCount - 1, segment.y)),
+          x: Math.max(0, Math.min(newBoardSize.cols - 1, segment.x)),
+          y: Math.max(0, Math.min(newBoardSize.rows - 1, segment.y)),
         }));
 
         // Adjust fruit position proportionally
         const adjustedFruit = {
-          x: Math.round(prev.fruit.x * scaleFactor),
-          y: Math.round(prev.fruit.y * scaleFactor),
+          x: Math.round(prev.fruit.x * scaleX),
+          y: Math.round(prev.fruit.y * scaleY),
         };
 
         // Ensure fruit stays within bounds and doesn't collide with snake
         let clampedFruit = {
-          x: Math.max(0, Math.min(newCellCount - 1, adjustedFruit.x)),
-          y: Math.max(0, Math.min(newCellCount - 1, adjustedFruit.y)),
+          x: Math.max(0, Math.min(newBoardSize.cols - 1, adjustedFruit.x)),
+          y: Math.max(0, Math.min(newBoardSize.rows - 1, adjustedFruit.y)),
         };
 
         // If fruit would collide with snake after adjustment, find a new position
         const fruitCollides = adjustedSnake.some(s => s.x === clampedFruit.x && s.y === clampedFruit.y);
         if (fruitCollides) {
-          console.log('Fruit collision after cell count change, repositioning...');
-          clampedFruit = randomFruitPos(adjustedSnake, newCellCount);
+          clampedFruit = randomFruitPos(adjustedSnake, newBoardSize.cols, newBoardSize.rows);
         }
 
         return {
@@ -140,8 +159,8 @@ export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onG
       });
     }
 
-    prevCellCountRef.current = newCellCount;
-  }, [cellCount]);
+    prevBoardSizeRef.current = newBoardSize;
+  }, [boardSizeOrCellCount]);
 
   const stopLoop = useCallback(() => {
     if (gameLoopRef.current) {
@@ -165,40 +184,14 @@ export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onG
         case "RIGHT": newHead = { x: head.x + 1, y: head.y }; break;
       }
 
-      // Wall wrap-around (teleport to opposite side) - only when actually crossing boundaries
-      const currentCellCount = cellCountRef.current;
-      let wrapped = false;
+      const { cols, rows } = boardSizeRef.current;
 
-      if (newHead.x < 0) {
-        newHead.x = currentCellCount - 1;
-        wrapped = true;
-      } else if (newHead.x >= currentCellCount) {
-        newHead.x = 0;
-        wrapped = true;
-      }
+      // No walls: always wrap-around on all sides
+      if (newHead.x < 0) newHead.x = cols - 1;
+      else if (newHead.x >= cols) newHead.x = 0;
 
-      if (newHead.y < 0) {
-        newHead.y = currentCellCount - 1;
-        wrapped = true;
-      } else if (newHead.y >= currentCellCount) {
-        newHead.y = 0;
-        wrapped = true;
-      }
-
-      // If we wrapped, check if the new position would cause immediate collision
-      if (wrapped) {
-        const wouldCollide = prev.snake.some((s) => s.x === newHead.x && s.y === newHead.y);
-        if (wouldCollide) {
-          // If wrapping would cause collision, try alternative positions
-        console.log('Wrap-around would cause collision, adjusting...');
-        // Move to a safe adjacent position instead
-        if (newHead.x === 0) newHead.x = 1;
-        else if (newHead.x === currentCellCount - 1) newHead.x = currentCellCount - 2;
-
-        if (newHead.y === 0) newHead.y = 1;
-        else if (newHead.y === currentCellCount - 1) newHead.y = currentCellCount - 2;
-        }
-      }
+      if (newHead.y < 0) newHead.y = rows - 1;
+      else if (newHead.y >= rows) newHead.y = 0;
 
       // Self collision - always active
       const tolerance = config.collisionTolerance;
@@ -208,12 +201,6 @@ export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onG
         return { ...prev, isRunning: false, isGameOver: true };
       }
 
-      // Validate new head position
-      if (newHead.x < 0 || newHead.x >= currentCellCount || newHead.y < 0 || newHead.y >= currentCellCount) {
-        // This should not happen with proper wrap-around, but safety check
-        console.warn('Invalid snake position detected:', newHead);
-        return prev;
-      }
 
       const ate = newHead.x === prev.fruit.x && newHead.y === prev.fruit.y;
       const newSnake = [newHead, ...prev.snake];
@@ -242,7 +229,7 @@ export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onG
       return {
         ...prev,
         snake: newSnake,
-        fruit: ate ? randomFruitPos(newSnake, cellCountRef.current) : prev.fruit,
+        fruit: ate ? randomFruitPos(newSnake, boardSizeRef.current.cols, boardSizeRef.current.rows) : prev.fruit,
         fruitType: ate ? randomFruitType() : prev.fruitType,
         direction: dir,
         score: newScore,
@@ -280,7 +267,8 @@ export function useSnakeGame(difficulty: Difficulty, onEatFruit: () => void, onG
   }, []);
 
   const startGame = useCallback(() => {
-    const state = createInitialState(cellCountRef.current);
+    const { cols, rows } = boardSizeRef.current;
+    const state = createInitialState(cols, rows);
     state.speed = config.baseSpeed;
     state.isRunning = true;
     directionRef.current = "RIGHT";

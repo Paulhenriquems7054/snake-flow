@@ -9,12 +9,23 @@ const AUDIO_FILES = {
   menuSelect: "/muda de opção.mp3.mpeg"
 } as const;
 
+// Multiple background music tracks
+const BACKGROUND_MUSIC_TRACKS = [
+  "/música.mp3.mpeg",
+  "/música2.mp3.mpeg",
+  "/música3.mp3.mpeg",
+  "/música4.mp3.mpeg"
+] as const;
+
 class AudioManager {
   private audioCache: Map<string, HTMLAudioElement> = new Map();
   private musicAudio: HTMLAudioElement | null = null;
   private isMusicPlaying = false;
   private musicVolume = 0.3;
   private soundEffectsVolume = 0.6;
+  private currentMusicTrack = 0;
+  private customMusicUrl: string | null = null;
+  private isCustomMusic = false;
 
   private loadAudio(src: string): HTMLAudioElement {
     if (!this.audioCache.has(src)) {
@@ -54,14 +65,46 @@ class AudioManager {
     this.playSound(AUDIO_FILES.menuSelect, this.soundEffectsVolume * 0.5); // Menu sounds quieter
   }
 
+  setCustomMusic(url: string | null) {
+    this.customMusicUrl = url;
+    this.isCustomMusic = !!url;
+    
+    // If music is currently playing, restart with new music
+    if (this.isMusicPlaying) {
+      this.stopMusic();
+      this.startMusic();
+    }
+  }
+
+  getNextMusicTrack(): string {
+    if (this.isCustomMusic && this.customMusicUrl) {
+      return this.customMusicUrl;
+    }
+    
+    const track = BACKGROUND_MUSIC_TRACKS[this.currentMusicTrack % BACKGROUND_MUSIC_TRACKS.length];
+    this.currentMusicTrack++;
+    return track;
+  }
+
   startMusic() {
     if (this.isMusicPlaying) return;
 
     try {
       if (!this.musicAudio) {
-        this.musicAudio = this.loadAudio(AUDIO_FILES.music);
+        const musicSrc = this.getNextMusicTrack();
+        this.musicAudio = this.loadAudio(musicSrc);
         this.musicAudio.loop = true;
         this.musicAudio.volume = this.musicVolume;
+        
+        // Add ended event listener to cycle through tracks
+        this.musicAudio.addEventListener('ended', () => {
+          if (!this.isCustomMusic) {
+            this.currentMusicTrack++;
+            this.musicAudio!.src = this.getNextMusicTrack();
+            this.musicAudio!.currentTime = 0;
+            this.musicAudio!.play().catch(() => {});
+          }
+        });
       }
 
       this.musicAudio.play().then(() => {
@@ -134,6 +177,11 @@ export function useSoundManager(
     };
   }, []);
 
+  // Set custom music
+  const setCustomMusic = useCallback((url: string | null) => {
+    audioManagerRef.current?.setCustomMusic(url);
+  }, []);
+
   // Start/stop music based on setting
   useEffect(() => {
     if (musicOn) {
@@ -184,5 +232,5 @@ export function useSoundManager(
     audioManagerRef.current?.stopMusic();
   }, []);
 
-  return { playEat, playOver, playPhase, playMenuSelect, pauseMusic, resumeMusic, stopMusic };
+  return { playEat, playOver, playPhase, playMenuSelect, pauseMusic, resumeMusic, stopMusic, setCustomMusic };
 }

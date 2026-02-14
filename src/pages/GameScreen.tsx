@@ -1,19 +1,23 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Pause, Play, Save, ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useSnakeGame } from "@/hooks/useSnakeGame";
 import { useSoundManager } from "@/hooks/useSoundManager";
-import { CELL_COUNT, type Direction, type SaveData } from "@/types/game";
+import { CELL_COUNT, MIN_CELL_SIZE, type BoardSize, type Direction, type SaveData } from "@/types/game";
 import GameCanvas from "@/components/GameCanvas";
 
 const GameScreen = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { settings, updateRecord, saveData, setSaveData } = useSettings();
   const [showGameOver, setShowGameOver] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
-  const [cellCount, setCellCount] = useState(CELL_COUNT);
+  const [boardSize, setBoardSize] = useState<BoardSize>({ cols: CELL_COUNT, rows: CELL_COUNT });
+  const [boardMeasured, setBoardMeasured] = useState(false);
   const [gameInitialized, setGameInitialized] = useState(false);
+  const gameAreaRef = useRef<HTMLDivElement>(null);
   const touchRef = useRef<{ x: number; y: number } | null>(null);
   const [touchFeedback, setTouchFeedback] = useState<{ x: number; y: number } | null>(null);
 
@@ -40,9 +44,27 @@ const GameScreen = () => {
     setShowGameOver(true);
   }, [vibrate, playOver]);
 
-  const onCellCountChange = useCallback((newCellCount: number) => {
-    setCellCount(newCellCount);
-  }, []);
+  // Keep board size stable and consistent between rendering and game logic
+  useEffect(() => {
+    const el = gameAreaRef.current;
+    if (!el) return;
+
+    const calc = () => {
+      if (gameInitialized) return; // freeze boardSize during gameplay to avoid drifting
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (!w || !h) return;
+      const cols = Math.max(8, Math.floor(Math.min(w / MIN_CELL_SIZE, 80)));
+      const rows = Math.max(8, Math.floor(Math.min(h / MIN_CELL_SIZE, 80)));
+      setBoardSize((prev) => (prev.cols === cols && prev.rows === rows ? prev : { cols, rows }));
+      setBoardMeasured(true);
+    };
+
+    calc();
+    const ro = new ResizeObserver(calc);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [gameInitialized]);
 
   const {
     gameState,
@@ -53,15 +75,7 @@ const GameScreen = () => {
     resumeSave,
     togglePause,
     getSnapshot,
-  } = useSnakeGame(settings.difficulty, onEatFruit, onGameOver, settings.trainingMode, cellCount);
-
-  // Handle cell count changes during gameplay (adjust positions but don't restart)
-  useEffect(() => {
-    if (gameInitialized && gameState.isRunning && !gameState.isGameOver) {
-      // Cell count changes are handled automatically by the useSnakeGame hook
-      // No need to restart the game, just let it adjust positions
-    }
-  }, [cellCount, gameInitialized, gameState.isRunning, gameState.isGameOver]);
+  } = useSnakeGame(settings.difficulty, onEatFruit, onGameOver, settings.trainingMode, boardSize);
 
   // Play phase sound on phase change
   useEffect(() => {
@@ -84,7 +98,7 @@ const GameScreen = () => {
 
   // Start or resume game on mount (only once)
   useEffect(() => {
-    if (!gameInitialized) {
+    if (!gameInitialized && boardMeasured) {
       if (saveData) {
         resumeSave(saveData.gameState);
         setSaveData(null);
@@ -94,7 +108,7 @@ const GameScreen = () => {
       setGameInitialized(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameInitialized]);
+  }, [gameInitialized, boardMeasured]);
 
   // Update record on game over
   useEffect(() => {
@@ -239,11 +253,11 @@ const GameScreen = () => {
 
         <div className="flex items-center gap-6">
           <div className="text-center">
-            <p className="text-[10px] uppercase tracking-wider opacity-60" style={{ color: currentTheme.hudText }}>Score</p>
+            <p className="text-[10px] uppercase tracking-wider opacity-60" style={{ color: currentTheme.hudText }}>{t("Score")}</p>
             <p className="font-game text-lg font-bold" style={{ color: currentTheme.hudText }}>{gameState.score}</p>
           </div>
           <div className="text-center">
-            <p className="text-[10px] uppercase tracking-wider opacity-60" style={{ color: currentTheme.hudText }}>Phase</p>
+            <p className="text-[10px] uppercase tracking-wider opacity-60" style={{ color: currentTheme.hudText }}>{t("Phase")}</p>
             <p className="font-game text-lg font-bold" style={{ color: currentTheme.hudText }}>{gameState.phase}</p>
           </div>
         </div>
@@ -263,8 +277,8 @@ const GameScreen = () => {
       </div>
 
       {/* Game area */}
-      <div className="flex-1 flex items-center justify-center p-2 relative">
-        <GameCanvas gameState={gameState} theme={currentTheme} onCellCountChange={onCellCountChange} />
+      <div ref={gameAreaRef} className="flex-1 flex items-center justify-center p-2 relative">
+        <GameCanvas gameState={gameState} theme={currentTheme} boardSize={boardSize} />
 
         {/* Touch feedback indicator */}
         {touchFeedback && (
@@ -297,13 +311,13 @@ const GameScreen = () => {
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-20">
             <div className="flex flex-col items-center gap-4 animate-scale-in">
               <Pause className="w-16 h-16" style={{ color: currentTheme.snakeColor }} />
-              <p className="font-game text-xl tracking-wider" style={{ color: currentTheme.hudText }}>PAUSED</p>
+              <p className="font-game text-xl tracking-wider" style={{ color: currentTheme.hudText }}>{t("PAUSED")}</p>
               <button
                 onClick={togglePause}
                 className="font-game text-sm px-6 py-2 rounded-xl border transition-all hover:opacity-80"
                 style={{ borderColor: currentTheme.snakeColor, color: currentTheme.snakeColor }}
               >
-                RESUME
+                {t("RESUME")}
               </button>
             </div>
           </div>
@@ -313,7 +327,7 @@ const GameScreen = () => {
         {showSaved && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 animate-fade-in">
             <div className="font-game text-sm px-4 py-2 rounded-lg" style={{ backgroundColor: currentTheme.hudBg, color: currentTheme.snakeColor, border: `1px solid ${currentTheme.snakeColor}40` }}>
-              💾 SAVED
+              💾 {t("SAVED")}
             </div>
           </div>
         )}
@@ -322,10 +336,10 @@ const GameScreen = () => {
         {showGameOver && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-20">
             <div className="flex flex-col items-center gap-5 animate-scale-in">
-              <p className="font-game text-3xl font-bold text-destructive">GAME OVER</p>
+              <p className="font-game text-3xl font-bold text-destructive">{t("GAME OVER")}</p>
               <div className="text-center">
-                <p className="font-game text-lg" style={{ color: currentTheme.hudText }}>Score: {gameState.score}</p>
-                <p className="font-game text-sm opacity-70" style={{ color: currentTheme.hudText }}>Phase: {gameState.phase}</p>
+                <p className="font-game text-lg" style={{ color: currentTheme.hudText }}>{t("Score")}: {gameState.score}</p>
+                <p className="font-game text-sm opacity-70" style={{ color: currentTheme.hudText }}>{t("Phase")}: {gameState.phase}</p>
               </div>
               <div className="flex gap-3">
                 <button
@@ -333,14 +347,14 @@ const GameScreen = () => {
                   className="font-game text-sm px-6 py-3 rounded-xl transition-all hover:opacity-80"
                   style={{ backgroundColor: currentTheme.snakeColor, color: currentTheme.bgColor }}
                 >
-                  PLAY AGAIN
+                  {t("PLAY AGAIN")}
                 </button>
                 <button
                   onClick={handleBack}
                   className="font-game text-sm px-6 py-3 rounded-xl border transition-all hover:opacity-80"
                   style={{ borderColor: currentTheme.snakeColor, color: currentTheme.snakeColor }}
                 >
-                  MENU
+                  {t("MENU")}
                 </button>
               </div>
             </div>

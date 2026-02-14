@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const CreditsScreen = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="fixed inset-0 flex flex-col bg-background">
@@ -10,7 +12,7 @@ const CreditsScreen = () => {
         <button onClick={() => navigate("/menu")} className="p-2 rounded-lg hover:bg-muted transition-colors">
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
-        <h1 className="font-game text-lg tracking-wider text-foreground">Credits</h1>
+        <h1 className="font-game text-lg tracking-wider text-foreground">{t("Credits")}</h1>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center gap-8 p-6 animate-fade-in">
@@ -18,7 +20,7 @@ const CreditsScreen = () => {
         <div className="text-center space-y-3">
           <h2 className="font-game text-2xl neon-text tracking-wider">SNAKE FLOW</h2>
           <div className="space-y-1 text-muted-foreground text-sm">
-            <p>Developed with ❤️</p>
+            <p>{t("Developed by")} ❤️</p>
             <p className="font-semibold text-foreground">Version 1.0.0</p>
             <p>2026</p>
           </div>

@@ -6,9 +6,16 @@ export type AppTheme = "system" | "light" | "dark";
 
 export type GameThemeId = "classic" | "ocean" | "lava" | "forest" | "cyber" | "desert" | "modern";
 
+export type Language = "en" | "pt";
+
 export interface Position {
   x: number;
   y: number;
+}
+
+export interface BoardSize {
+  cols: number;
+  rows: number;
 }
 
 export interface GameTheme {
@@ -60,6 +67,7 @@ export interface Settings {
   vibrationOn: boolean;
   difficulty: Difficulty;
   trainingMode: boolean;
+  language: Language;
 }
 
 export interface RecordData {
@@ -79,9 +87,10 @@ export const MIN_CELL_SIZE = 15; // Tamanho mínimo de célula em pixels
 export const CELL_COUNT = 20; // Valor padrão, será calculado dinamicamente
 
 export const DIFFICULTY_CONFIG: Record<Difficulty, { baseSpeed: number; speedIncrement: number; collisionTolerance: number }> = {
-  easy: { baseSpeed: 200, speedIncrement: 8, collisionTolerance: 1 },
-  medium: { baseSpeed: 150, speedIncrement: 12, collisionTolerance: 0 },
-  hard: { baseSpeed: 100, speedIncrement: 18, collisionTolerance: 0 },
+  // baseSpeed is in ms per tick (higher = slower start). speedIncrement reduces ms each phase (faster over time).
+  easy: { baseSpeed: 280, speedIncrement: 6, collisionTolerance: 1 },
+  medium: { baseSpeed: 240, speedIncrement: 8, collisionTolerance: 0 },
+  hard: { baseSpeed: 200, speedIncrement: 10, collisionTolerance: 0 },
 };
 
 export const GAME_THEMES: GameTheme[] = [
@@ -104,4 +113,5 @@ export const DEFAULT_SETTINGS: Settings = {
   vibrationOn: true,
   difficulty: "medium",
   trainingMode: false,
+  language: "pt",
 };

@@ -2,9 +2,11 @@ import { useNavigate } from "react-router-dom";
 import { Play, Trophy, Settings, Info, RotateCcw } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useSoundManager } from "@/hooks/useSoundManager";
+import { useTranslation } from "react-i18next";
 
 const MenuScreen = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { record, saveData, setSaveData } = useSettings();
   const { playMenuSelect } = useSoundManager(true, 0.3, true, 0.6); // Always play menu sounds
 
@@ -22,9 +24,9 @@ const MenuScreen = () => {
   };
 
   const menuItems = [
-    { label: "Record", icon: Trophy, path: "/record", delay: "0.2s" },
-    { label: "Settings", icon: Settings, path: "/settings", delay: "0.3s" },
-    { label: "Credits", icon: Info, path: "/credits", delay: "0.4s" },
+    { label: t("Record"), icon: Trophy, path: "/record", delay: "0.2s" },
+    { label: t("Settings"), icon: Settings, path: "/settings", delay: "0.3s" },
+    { label: t("Credits"), icon: Info, path: "/credits", delay: "0.4s" },
   ];
 
   return (
@@ -41,7 +43,7 @@ const MenuScreen = () => {
         {/* Last score */}
         {record.highScore > 0 && (
           <div className="animate-fade-in text-center">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Best Score</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">{t("Best Score")}</p>
             <p className="font-game text-xl text-primary">{record.highScore}</p>
           </div>
         )}
@@ -57,10 +59,10 @@ const MenuScreen = () => {
               <RotateCcw className="w-5 h-5 text-primary transition-transform duration-200 group-hover:scale-110" />
               <div className="flex flex-col items-start">
                 <span className="font-game text-sm tracking-wider text-primary">
-                  Continue
+                  {t("Continue")}
                 </span>
                 <span className="text-[10px] text-muted-foreground">
-                  Score: {saveData.gameState.score} · Phase: {saveData.gameState.phase}
+                  {t("Score")}: {saveData.gameState.score} · {t("Phase")}: {saveData.gameState.phase}
                 </span>
               </div>
             </button>
@@ -73,7 +75,7 @@ const MenuScreen = () => {
           >
             <Play className="w-5 h-5 text-primary transition-transform duration-200 group-hover:scale-110" />
             <span className="font-game text-sm tracking-wider text-foreground group-hover:text-primary transition-colors">
-              {hasSave ? "New Game" : "Play"}
+              {hasSave ? t("New Game") : t("PLAY AGAIN")}
             </span>
           </button>
 

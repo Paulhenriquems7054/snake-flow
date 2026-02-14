@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback } from "react";
-import { type GameState, type GameTheme, type Position, CELL_COUNT, MIN_CELL_SIZE, FRUIT_EMOJIS } from "@/types/game";
+import { type BoardSize, type GameState, type GameTheme, type Position, FRUIT_EMOJIS } from "@/types/game";
 
 interface Particle {
   x: number;
@@ -15,16 +15,22 @@ interface Particle {
 interface Props {
   gameState: GameState;
   theme: GameTheme;
-  onCellCountChange?: (cellCount: number) => void;
+  boardSize: BoardSize;
 }
 
-const GameCanvas = ({ gameState, theme, onCellCountChange }: Props) => {
+const GameCanvas = ({ gameState, theme, boardSize }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const animFrameRef = useRef<number | null>(null);
   const prevScoreRef = useRef(gameState.score);
-  const prevCellCountRef = useRef<number | null>(null);
+  const metricsRef = useRef<{
+    width: number;
+    height: number;
+    dpr: number;
+    cellW: number;
+    cellH: number;
+  } | null>(null);
 
   const spawnParticles = useCallback((cx: number, cy: number, color: string, emoji: string) => {
     for (let i = 0; i < 10; i++) {
@@ -42,52 +48,63 @@ const GameCanvas = ({ gameState, theme, onCellCountChange }: Props) => {
     }
   }, []);
 
-  // Detect fruit eaten → spawn particles
-  useEffect(() => {
-      if (gameState.score > prevScoreRef.current) {
-        const container = containerRef.current;
-        if (container) {
-          const containerWidth = container.clientWidth;
-          const containerHeight = container.clientHeight;
-          const cellCount = Math.floor(Math.min(containerWidth / MIN_CELL_SIZE, containerHeight / MIN_CELL_SIZE, 50));
-          const cellSize = Math.floor(Math.min(containerWidth / cellCount, containerHeight / cellCount));
-          const head = gameState.snake[0];
-          const cx = head.x * cellSize + cellSize / 2;
-          const cy = head.y * cellSize + cellSize / 2;
-          spawnParticles(cx, cy, theme.fruitColor, FRUIT_EMOJIS[gameState.fruitType]);
-        }
-      }
-    prevScoreRef.current = gameState.score;
-  }, [gameState.score, gameState.snake, gameState.fruitType, theme.fruitColor, spawnParticles]);
-
-  // Main render + particle animation loop
+  // Keep canvas backing store perfectly in sync with displayed size (prevents "moving grid")
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
 
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
+    const updateSize = () => {
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (!width || !height) return;
 
-    // Calculate cell size to fill available screen space
-    const availableWidth = containerWidth;
-    const availableHeight = containerHeight;
+      const dpr = window.devicePixelRatio || 1;
+      const { cols, rows } = boardSize;
+      const cellW = width / cols;
+      const cellH = height / rows;
 
-    // Calculate dynamic cell count based on screen size
-    const cellCount = Math.floor(Math.min(availableWidth / MIN_CELL_SIZE, availableHeight / MIN_CELL_SIZE, 50));
-    const cellSize = Math.floor(Math.min(availableWidth / cellCount, availableHeight / cellCount));
-    const totalSize = cellSize * cellCount;
+      // Set CSS size explicitly (so layout size == drawing size)
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
 
-    // Notify parent component of cell count change only when significantly different
-    const prevCellCount = prevCellCountRef.current;
-    if (onCellCountChange && (prevCellCount === null || Math.abs(cellCount - prevCellCount) >= 2)) {
-      onCellCountChange(cellCount);
-    }
-    prevCellCountRef.current = cellCount;
+      // Set backing store size with DPR for crisp rendering
+      const nextW = Math.floor(width * dpr);
+      const nextH = Math.floor(height * dpr);
+      if (canvas.width !== nextW) canvas.width = nextW;
+      if (canvas.height !== nextH) canvas.height = nextH;
+
+      metricsRef.current = { width, height, dpr, cellW, cellH };
+    };
+
+    updateSize();
+    const ro = new ResizeObserver(updateSize);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [boardSize]);
+
+  // Detect fruit eaten → spawn particles
+  useEffect(() => {
+      if (gameState.score > prevScoreRef.current) {
+        const m = metricsRef.current;
+        if (m) {
+          const head = gameState.snake[0];
+          const cx = head.x * m.cellW + m.cellW / 2;
+          const cy = head.y * m.cellH + m.cellH / 2;
+          spawnParticles(cx, cy, theme.fruitColor, FRUIT_EMOJIS[gameState.fruitType]);
+        }
+      }
+    prevScoreRef.current = gameState.score;
+  }, [boardSize, gameState.score, gameState.snake, gameState.fruitType, theme.fruitColor, spawnParticles]);
+
+  // Main render + particle animation loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
     // Use full container space for canvas
-    canvas.width = containerWidth;
-    canvas.height = containerHeight;
+    const m = metricsRef.current;
+    if (!m) return;
 
     let lastTime = performance.now();
 
@@ -98,34 +115,42 @@ const GameCanvas = ({ gameState, theme, onCellCountChange }: Props) => {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
+      const mm = metricsRef.current;
+      if (!mm) return;
+
+      // Map drawing coordinates to CSS pixels
+      ctx.setTransform(mm.dpr, 0, 0, mm.dpr, 0, 0);
+
       // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, mm.width, mm.height);
 
       // Save context state
       ctx.save();
 
       // Background with rounded corners
-      drawBoard(ctx, containerWidth, containerHeight, 0, theme.bgColor);
+      drawBoard(ctx, mm.width, mm.height, 0, theme.bgColor);
 
       // Grid
       ctx.strokeStyle = theme.gridColor;
       ctx.lineWidth = 0.5;
-      for (let i = 0; i <= cellCount; i++) {
+      for (let i = 0; i <= boardSize.cols; i++) {
         ctx.beginPath();
-        ctx.moveTo(i * cellSize, 0);
-        ctx.lineTo(i * cellSize, containerHeight);
+        ctx.moveTo(i * mm.cellW, 0);
+        ctx.lineTo(i * mm.cellW, mm.height);
         ctx.stroke();
+      }
+      for (let i = 0; i <= boardSize.rows; i++) {
         ctx.beginPath();
-        ctx.moveTo(0, i * cellSize);
-        ctx.lineTo(containerWidth, i * cellSize);
+        ctx.moveTo(0, i * mm.cellH);
+        ctx.lineTo(mm.width, i * mm.cellH);
         ctx.stroke();
       }
 
       // Snake body - all segments as circles
-      drawSnake(ctx, gameState.snake, cellSize, theme.snakeColor);
+      drawSnake(ctx, gameState.snake, mm.cellW, mm.cellH, theme.snakeColor);
 
       // Fruit (circle)
-      drawFood(ctx, gameState.fruit, cellSize, theme.fruitColor);
+      drawFood(ctx, gameState.fruit, mm.cellW, mm.cellH, theme.fruitColor);
 
       // Particles
       const particles = particlesRef.current;
@@ -176,7 +201,7 @@ const GameCanvas = ({ gameState, theme, onCellCountChange }: Props) => {
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [gameState, theme, onCellCountChange]);
+  }, [boardSize, gameState, theme]);
 
   return (
     <div ref={containerRef} className="w-full h-full flex items-center justify-center">
@@ -205,14 +230,14 @@ function drawBoard(ctx: CanvasRenderingContext2D, width: number, height: number,
   ctx.fill();
 }
 
-function drawSnake(ctx: CanvasRenderingContext2D, snake: Position[], cellSize: number, snakeColor: string) {
+function drawSnake(ctx: CanvasRenderingContext2D, snake: Position[], cellW: number, cellH: number, snakeColor: string) {
   ctx.fillStyle = snakeColor;
   ctx.imageSmoothingEnabled = true;
 
   snake.forEach(segment => {
-    const cx = segment.x * cellSize + cellSize / 2;
-    const cy = segment.y * cellSize + cellSize / 2;
-    const radius = cellSize / 2.3;
+    const cx = segment.x * cellW + cellW / 2;
+    const cy = segment.y * cellH + cellH / 2;
+    const radius = Math.min(cellW, cellH) / 2.3;
 
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -220,13 +245,13 @@ function drawSnake(ctx: CanvasRenderingContext2D, snake: Position[], cellSize: n
   });
 }
 
-function drawFood(ctx: CanvasRenderingContext2D, food: Position, cellSize: number, foodColor: string) {
+function drawFood(ctx: CanvasRenderingContext2D, food: Position, cellW: number, cellH: number, foodColor: string) {
   ctx.fillStyle = foodColor;
   ctx.imageSmoothingEnabled = true;
 
-  const cx = food.x * cellSize + cellSize / 2;
-  const cy = food.y * cellSize + cellSize / 2;
-  const radius = cellSize / 2.5;
+  const cx = food.x * cellW + cellW / 2;
+  const cy = food.y * cellH + cellH / 2;
+  const radius = Math.min(cellW, cellH) / 2.5;
 
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
