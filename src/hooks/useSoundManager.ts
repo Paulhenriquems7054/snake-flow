@@ -1,4 +1,5 @@
-import { useCallback, useRef, useEffect } from "react";
+import { useCallback, useEffect } from "react";
+import { useGlobalAudioManager } from "@/contexts/AudioManagerContext";
 
 // Audio files from public folder
 const AUDIO_FILES = {
@@ -179,84 +180,78 @@ export function useSoundManager(
   soundEffectsVolume: number,
   custom?: { music?: string | null; eat?: string | null; over?: string | null; phase?: string | null }
 ) {
-  const audioManagerRef = useRef<AudioManager | null>(null);
-
-  // Initialize audio manager
-  useEffect(() => {
-    audioManagerRef.current = new AudioManager();
-    return () => {
-      audioManagerRef.current?.destroy();
-    };
-  }, []);
+  const audioManager = useGlobalAudioManager();
 
   // Set custom music
   const setCustomMusic = useCallback((url: string | null) => {
-    audioManagerRef.current?.setCustomMusic(url);
-  }, []);
+    audioManager?.setCustomMusic(url);
+  }, [audioManager]);
   const setCustomEffect = useCallback((kind: "eat" | "over" | "phase", url: string | null) => {
-    audioManagerRef.current?.setCustomEffect(kind, url);
-  }, []);
+    audioManager?.setCustomEffect(kind, url);
+  }, [audioManager]);
 
   // Apply initial custom URLs (session)
   useEffect(() => {
-    if (!audioManagerRef.current) return;
+    if (!audioManager) return;
     if (custom) {
-      if (typeof custom.music !== "undefined") audioManagerRef.current.setCustomMusic(custom.music ?? null);
-      if (typeof custom.eat !== "undefined") audioManagerRef.current.setCustomEffect("eat", custom.eat ?? null);
-      if (typeof custom.over !== "undefined") audioManagerRef.current.setCustomEffect("over", custom.over ?? null);
-      if (typeof custom.phase !== "undefined") audioManagerRef.current.setCustomEffect("phase", custom.phase ?? null);
+      if (typeof custom.music !== "undefined") audioManager.setCustomMusic(custom.music ?? null);
+      if (typeof custom.eat !== "undefined") audioManager.setCustomEffect("eat", custom.eat ?? null);
+      if (typeof custom.over !== "undefined") audioManager.setCustomEffect("over", custom.over ?? null);
+      if (typeof custom.phase !== "undefined") audioManager.setCustomEffect("phase", custom.phase ?? null);
     }
-  }, [custom]);
+  }, [audioManager, custom]);
 
   // Start/stop music based on setting
   useEffect(() => {
-    if (musicOn) {
-      audioManagerRef.current?.startMusic();
-    } else {
-      audioManagerRef.current?.stopMusic();
+    if (audioManager) {
+      if (musicOn) {
+        audioManager.startMusic();
+      } else {
+        audioManager.stopMusic();
+      }
     }
-  }, [musicOn]);
+  }, [audioManager, musicOn]);
 
   // Update volumes when they change
   useEffect(() => {
-    if (audioManagerRef.current && isFinite(musicVolume)) {
-      audioManagerRef.current.setMusicVolume(musicVolume);
+    if (audioManager && isFinite(musicVolume)) {
+      audioManager.setMusicVolume(musicVolume);
     }
-  }, [musicVolume]);
+  }, [audioManager, musicVolume]);
 
   useEffect(() => {
-    if (audioManagerRef.current && isFinite(soundEffectsVolume)) {
-      audioManagerRef.current.setSoundEffectsVolume(soundEffectsVolume);
+    if (audioManager && isFinite(soundEffectsVolume)) {
+      audioManager.setSoundEffectsVolume(soundEffectsVolume);
     }
-  }, [soundEffectsVolume]);
+  }, [audioManager, soundEffectsVolume]);
 
   const playEat = useCallback(() => {
-    if (soundEffectsOn) audioManagerRef.current?.playEatSound();
-  }, [soundEffectsOn]);
+    if (soundEffectsOn) audioManager?.playEatSound();
+  }, [audioManager, soundEffectsOn]);
 
   const playOver = useCallback(() => {
-    if (soundEffectsOn) audioManagerRef.current?.playGameOverSound();
-  }, [soundEffectsOn]);
+    if (soundEffectsOn) audioManager?.playGameOverSound();
+  }, [audioManager, soundEffectsOn]);
 
   const playPhase = useCallback(() => {
-    if (soundEffectsOn) audioManagerRef.current?.playPhaseSound();
-  }, [soundEffectsOn]);
+    if (soundEffectsOn) audioManager?.playPhaseSound();
+  }, [audioManager, soundEffectsOn]);
 
   const playMenuSelect = useCallback(() => {
-    if (soundEffectsOn) audioManagerRef.current?.playMenuSelectSound();
-  }, [soundEffectsOn]);
+    if (soundEffectsOn) audioManager?.playMenuSelectSound();
+  }, [audioManager, soundEffectsOn]);
 
   const pauseMusic = useCallback(() => {
-    audioManagerRef.current?.fadeForPause();
-  }, []);
+    audioManager?.fadeForPause();
+  }, [audioManager]);
 
   const resumeMusic = useCallback(() => {
-    audioManagerRef.current?.fadeForResume();
-  }, []);
+    audioManager?.fadeForResume();
+  }, [audioManager]);
 
   const stopMusic = useCallback(() => {
-    audioManagerRef.current?.stopMusic();
-  }, []);
+    audioManager?.stopMusic();
+  }, [audioManager]);
 
   return { playEat, playOver, playPhase, playMenuSelect, pauseMusic, resumeMusic, stopMusic, setCustomMusic, setCustomEffect };
 }

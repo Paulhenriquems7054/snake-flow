@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { I18nextProvider } from "react-i18next";
 import i18n from "./i18n";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { AudioManagerProvider } from "@/contexts/AudioManagerContext";
 import SplashScreen from "./pages/SplashScreen";
 import MenuScreen from "./pages/MenuScreen";
 import SettingsScreen from "./pages/SettingsScreen";
@@ -21,21 +22,23 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <SettingsProvider>
-        <I18nextProvider i18n={i18n}>
-          <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<SplashScreen />} />
-            <Route path="/menu" element={<MenuScreen />} />
-            <Route path="/settings" element={<SettingsScreen />} />
-            <Route path="/record" element={<RecordScreen />} />
-            <Route path="/credits" element={<CreditsScreen />} />
-            <Route path="/game" element={<GameScreen />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-        </I18nextProvider>
-      </SettingsProvider>
+      <AudioManagerProvider>
+        <SettingsProvider>
+          <I18nextProvider i18n={i18n}>
+            <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<SplashScreen />} />
+              <Route path="/menu" element={<MenuScreen />} />
+              <Route path="/settings" element={<SettingsScreen />} />
+              <Route path="/record" element={<RecordScreen />} />
+              <Route path="/credits" element={<CreditsScreen />} />
+              <Route path="/game" element={<GameScreen />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+          </I18nextProvider>
+        </SettingsProvider>
+      </AudioManagerProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
