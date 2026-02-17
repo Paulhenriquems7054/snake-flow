@@ -52,7 +52,17 @@ i18n
           "Developed by": "Developed by",
           "Sound effects by": "Sound effects by",
           "Music by": "Music by",
-          "Thanks for playing!": "Thanks for playing!"
+          "Thanks for playing!": "Thanks for playing!",
+          "Custom Audio (session)": "Custom Audio (session)",
+          "Background Music": "Background Music",
+          "Eat Effect": "Eat Effect",
+          "Phase Change Effect": "Phase Change Effect",
+          "Game Over Effect": "Game Over Effect",
+          "Custom file": "Custom file",
+          "Default": "Default",
+          "Upload": "Upload",
+          "Clear": "Clear",
+          "Restore defaults": "Restore defaults"
         }
       },
       pt: {
@@ -102,7 +112,17 @@ i18n
           "Developed by": "Desenvolvido por",
           "Sound effects by": "Efeitos sonoros por",
           "Music by": "Música por",
-          "Thanks for playing!": "Obrigado por jogar!"
+          "Thanks for playing!": "Obrigado por jogar!",
+          "Custom Audio (session)": "Áudio Personalizado (sessão)",
+          "Background Music": "Música de Fundo",
+          "Eat Effect": "Efeito de Comer",
+          "Phase Change Effect": "Efeito de Mudança de Fase",
+          "Game Over Effect": "Efeito de Fim de Jogo",
+          "Custom file": "Arquivo personalizado",
+          "Default": "Padrão",
+          "Upload": "Enviar",
+          "Clear": "Limpar",
+          "Restore defaults": "Restaurar padrões"
         }
       }
     },

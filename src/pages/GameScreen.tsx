@@ -164,6 +164,12 @@ const GameScreen = () => {
 
   // Touch controls by single tap: divide screen into 4 areas
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Verifica se o toque foi em um botão - se sim, não interfere
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) {
+      return; // Permite que o botão receba o evento normalmente
+    }
+
     // Bloqueia comportamento padrão do navegador (scroll/zoom/pull-to-refresh)
     e.preventDefault();
 
@@ -206,9 +212,19 @@ const GameScreen = () => {
 
   // Não usamos move/end para evitar qualquer gesto contínuo
   const handleTouchMove = (e: React.TouchEvent) => {
+    // Verifica se o movimento foi iniciado em um botão - se sim, não interfere
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) {
+      return; // Permite que o botão receba o evento normalmente
+    }
     e.preventDefault();
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
+    // Verifica se o toque foi em um botão - se sim, não interfere
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) {
+      return; // Permite que o botão receba o evento normalmente
+    }
     e.preventDefault();
     setTouchFeedback(null);
   };

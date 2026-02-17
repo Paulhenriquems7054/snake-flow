@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useCallback } from "react";
 import { ArrowLeft, Languages, Volume2, VolumeX, Sun, Moon, Monitor, Smartphone, Gamepad2, Upload, Trash2, RotateCcw } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useTranslation } from "react-i18next";
@@ -8,6 +9,14 @@ const SettingsScreen = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { settings, updateSettings, customAudio, setCustomAudio, resetAllCustomAudio } = useSettings();
+
+  // Função de vibração para mobile
+  const vibrate = useCallback((ms: number = 50) => {
+    const isMobile = typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile && navigator.vibrate) {
+      navigator.vibrate(ms);
+    }
+  }, []);
 
   const appThemes: { value: AppTheme; label: string; icon: typeof Sun }[] = [
     { value: "system", label: t("System"), icon: Monitor },
@@ -53,30 +62,34 @@ const SettingsScreen = () => {
         </Section>
 
         {/* Custom Audio (session) */}
-        <Section title={t("Custom Audio (session)")}>          
+        <Section title={t("Custom Audio (session)")}>
           <CustomAudioRow
             label={t("Background Music")}
             currentName={customAudio.music ? t("Custom file") : t("Default")}
             onSelect={(file) => handleAudioSelect("music", file, setCustomAudio)}
             onClear={() => handleAudioClear("music", customAudio.music, setCustomAudio)}
+            t={t}
           />
           <CustomAudioRow
             label={t("Eat Effect")}
             currentName={customAudio.eat ? t("Custom file") : t("Default")}
             onSelect={(file) => handleAudioSelect("eat", file, setCustomAudio)}
             onClear={() => handleAudioClear("eat", customAudio.eat, setCustomAudio)}
+            t={t}
           />
           <CustomAudioRow
             label={t("Phase Change Effect")}
             currentName={customAudio.phase ? t("Custom file") : t("Default")}
             onSelect={(file) => handleAudioSelect("phase", file, setCustomAudio)}
             onClear={() => handleAudioClear("phase", customAudio.phase, setCustomAudio)}
+            t={t}
           />
           <CustomAudioRow
             label={t("Game Over Effect")}
             currentName={customAudio.over ? t("Custom file") : t("Default")}
             onSelect={(file) => handleAudioSelect("over", file, setCustomAudio)}
             onClear={() => handleAudioClear("over", customAudio.over, setCustomAudio)}
+            t={t}
           />
           <div className="flex justify-end">
             <button
@@ -92,7 +105,10 @@ const SettingsScreen = () => {
         <Section title={t("Language")}>
           <div className="flex gap-2">
             <button
-              onClick={() => updateSettings({ language: "pt" })}
+              onClick={() => {
+                updateSettings({ language: "pt" });
+                vibrate(50); // Vibração ao mudar idioma
+              }}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border transition-all duration-200 ${
                 settings.language === "pt"
                   ? "border-primary bg-primary/10 text-primary"
@@ -103,7 +119,10 @@ const SettingsScreen = () => {
               <span className="text-xs font-medium">{t("Portuguese")}</span>
             </button>
             <button
-              onClick={() => updateSettings({ language: "en" })}
+              onClick={() => {
+                updateSettings({ language: "en" });
+                vibrate(50); // Vibração ao mudar idioma
+              }}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border transition-all duration-200 ${
                 settings.language === "en"
                   ? "border-primary bg-primary/10 text-primary"
@@ -153,7 +172,10 @@ const SettingsScreen = () => {
             label={t("Vibration")}
             icon={Smartphone}
             active={settings.vibrationOn}
-            onToggle={() => updateSettings({ vibrationOn: !settings.vibrationOn })}
+            onToggle={() => {
+              updateSettings({ vibrationOn: !settings.vibrationOn });
+              vibrate(50); // Vibração ao alternar Vibration
+            }}
           />
         </Section>
 
@@ -163,7 +185,10 @@ const SettingsScreen = () => {
             label={t("Training Mode")}
             icon={Gamepad2}
             active={settings.trainingMode}
-            onToggle={() => updateSettings({ trainingMode: !settings.trainingMode })}
+            onToggle={() => {
+              updateSettings({ trainingMode: !settings.trainingMode });
+              vibrate(50); // Vibração ao alternar Training Mode
+            }}
           />
           <p className="text-xs text-muted-foreground px-1">{t("No game over, walls wrap around. Perfect for practice.")}</p>
         </Section>
@@ -330,11 +355,13 @@ function CustomAudioRow({
   currentName,
   onSelect,
   onClear,
+  t,
 }: {
   label: string;
   currentName: string;
   onSelect: (file: File | null) => void;
   onClear: () => void;
+  t: (key: string) => string;
 }) {
   const inputId = Math.random().toString(36).slice(2);
   return (
@@ -352,10 +379,10 @@ function CustomAudioRow({
           onChange={(e) => onSelect(e.target.files?.[0] ?? null)}
         />
         <label htmlFor={inputId} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:border-primary/30 text-xs cursor-pointer">
-          <Upload className="w-4 h-4" /> Upload
+          <Upload className="w-4 h-4" /> {t("Upload")}
         </label>
         <button onClick={onClear} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:border-destructive/50 text-xs">
-          <Trash2 className="w-4 h-4" /> Clear
+          <Trash2 className="w-4 h-4" /> {t("Clear")}
         </button>
       </div>
     </div>
