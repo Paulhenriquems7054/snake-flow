@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode, useEffect } from "react";
-import { AudioManager } from "@/hooks/useSoundManager";
+import { AudioManager } from "@/utils/audioManager";
 
 const AudioManagerContext = createContext<AudioManager | null>(null);
 
