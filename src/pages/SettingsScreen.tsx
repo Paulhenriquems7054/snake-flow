@@ -19,7 +19,6 @@ const SettingsScreen = () => {
   }, []);
 
   const appThemes: { value: AppTheme; label: string; icon: typeof Sun }[] = [
-    { value: "system", label: t("System"), icon: Monitor },
     { value: "light", label: t("Light"), icon: Sun },
     { value: "dark", label: t("Dark"), icon: Moon },
   ];

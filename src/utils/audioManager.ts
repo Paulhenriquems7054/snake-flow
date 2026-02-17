@@ -1,18 +1,18 @@
 // Audio files from public folder
 const AUDIO_FILES = {
-  eat: "/come fruta.mp3.mpeg",
-  gameOver: "/perde a fase.mp3.mpeg",
-  phaseChange: "/Muda de fase.mp3.mpeg",
-  music: "/música.mp3.mpeg",
-  menuSelect: "/muda de opção.mp3.mpeg"
+  eat: "/come fruta.mp3",
+  gameOver: "/perde a fase.mp3",
+  phaseChange: "/Muda de fase.mp3",
+  music: "/música.mp3",
+  menuSelect: "/muda de opção.mp3"
 } as const;
 
 // Multiple background music tracks
 const BACKGROUND_MUSIC_TRACKS = [
-  "/música.mp3.mpeg",
-  "/música2.mp3.mpeg",
-  "/música3.mp3.mpeg",
-  "/música4.mp3.mpeg"
+  "/música.mp3",
+  "/música2.mp3",
+  "/música3.mp3",
+  "/música4.mp3"
 ] as const;
 
 export class AudioManager {
@@ -28,10 +28,36 @@ export class AudioManager {
   private customOverUrl: string | null = null;
   private customPhaseUrl: string | null = null;
 
+  private async checkAudioExists(src: string): Promise<boolean> {
+    try {
+      const response = await fetch(src, { method: 'HEAD' });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
   private loadAudio(src: string): HTMLAudioElement {
     if (!this.audioCache.has(src)) {
       const audio = new Audio(src);
       audio.preload = "auto";
+
+      // Add error handling for loading
+      audio.addEventListener('error', (e) => {
+        console.error(`Failed to load audio file: ${src}`, e);
+      });
+
+      audio.addEventListener('canplaythrough', () => {
+        console.log(`Audio loaded successfully: ${src}`);
+      });
+
+      // Check if file exists
+      this.checkAudioExists(src).then(exists => {
+        if (!exists) {
+          console.warn(`Audio file does not exist: ${src}`);
+        }
+      });
+
       this.audioCache.set(src, audio);
     }
     return this.audioCache.get(src)!;
@@ -42,11 +68,13 @@ export class AudioManager {
       const audio = this.loadAudio(src);
       audio.volume = volume;
       audio.currentTime = 0; // Reset to start
-      audio.play().catch(() => {
-        // Audio play failed, silently ignore
+      audio.play().catch((error) => {
+        // Audio play failed, log for debugging
+        console.warn(`Failed to play audio: ${src}`, error);
       });
-    } catch {
+    } catch (error) {
       // Audio not supported
+      console.warn(`Audio not supported: ${src}`, error);
     }
   }
 

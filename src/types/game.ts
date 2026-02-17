@@ -2,7 +2,7 @@ export type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT";
 
 export type Difficulty = "easy" | "medium" | "hard";
 
-export type AppTheme = "system" | "light" | "dark";
+export type AppTheme = "light" | "dark";
 
 export type GameThemeId = "classic" | "ocean" | "lava" | "forest" | "cyber" | "desert" | "modern";
 
