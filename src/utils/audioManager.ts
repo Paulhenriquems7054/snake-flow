@@ -39,42 +39,88 @@ export class AudioManager {
 
   private loadAudio(src: string): HTMLAudioElement {
     if (!this.audioCache.has(src)) {
+      console.log(`[AudioManager] Loading audio: ${src}`);
       const audio = new Audio(src);
       audio.preload = "auto";
 
       // Add error handling for loading
       audio.addEventListener('error', (e) => {
-        console.error(`Failed to load audio file: ${src}`, e);
+        console.error(`[AudioManager] Failed to load audio file: ${src}`, e);
+        console.error(`[AudioManager] Error code: ${e.target?.error?.code}`);
+        console.error(`[AudioManager] Error message: ${e.target?.error?.message}`);
+        console.error(`[AudioManager] Network state: ${e.target?.networkState}`);
+        console.error(`[AudioManager] Ready state: ${e.target?.readyState}`);
       });
 
       audio.addEventListener('canplaythrough', () => {
-        console.log(`Audio loaded successfully: ${src}`);
+        console.log(`[AudioManager] Audio loaded successfully: ${src}`);
       });
 
-      // Check if file exists
-      this.checkAudioExists(src).then(exists => {
-        if (!exists) {
-          console.warn(`Audio file does not exist: ${src}`);
-        }
+      audio.addEventListener('loadstart', () => {
+        console.log(`[AudioManager] Started loading: ${src}`);
+      });
+
+      audio.addEventListener('loadeddata', () => {
+        console.log(`[AudioManager] Data loaded: ${src}`);
+      });
+
+      audio.addEventListener('canplay', () => {
+        console.log(`[AudioManager] Can play: ${src}`);
       });
 
       this.audioCache.set(src, audio);
+    } else {
+      console.log(`[AudioManager] Using cached audio: ${src}`);
     }
     return this.audioCache.get(src)!;
   }
 
-  playSound(src: string, volume = 0.3) {
+  async playSound(src: string, volume = 0.3) {
+    console.log(`[AudioManager] Attempting to play sound: ${src} at volume ${volume}`);
     try {
       const audio = this.loadAudio(src);
       audio.volume = volume;
       audio.currentTime = 0; // Reset to start
-      audio.play().catch((error) => {
-        // Audio play failed, log for debugging
-        console.warn(`Failed to play audio: ${src}`, error);
-      });
+
+      console.log(`[AudioManager] Audio element state: networkState=${audio.networkState}, readyState=${audio.readyState}, duration=${audio.duration}`);
+
+      const playPromise = audio.play();
+
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          console.log(`[AudioManager] Audio playing successfully: ${src}`);
+        }).catch(async (error) => {
+          console.error(`[AudioManager] Play failed for ${src}:`, error);
+          if (error.name === 'NotAllowedError') {
+            console.log('[AudioManager] Audio blocked by autoplay policy - waiting for user interaction');
+
+            // Try to unlock audio on next user interaction
+            const unlockAudio = async () => {
+              console.log('[AudioManager] Attempting to unlock audio after user interaction');
+              try {
+                await audio.play();
+                console.log('[AudioManager] Audio unlocked successfully');
+                document.removeEventListener('click', unlockAudio);
+                document.removeEventListener('touchstart', unlockAudio);
+                document.removeEventListener('keydown', unlockAudio);
+              } catch (e) {
+                console.warn('[AudioManager] Failed to unlock audio:', e);
+              }
+            };
+
+            document.addEventListener('click', unlockAudio, { once: true });
+            document.addEventListener('touchstart', unlockAudio, { once: true });
+            document.addEventListener('keydown', unlockAudio, { once: true });
+
+          } else {
+            console.warn(`[AudioManager] Audio error: ${src}`, error.name, error.message);
+          }
+        });
+      } else {
+        console.log(`[AudioManager] Play promise undefined for ${src}`);
+      }
     } catch (error) {
-      // Audio not supported
-      console.warn(`Audio not supported: ${src}`, error);
+      console.error(`[AudioManager] Audio not supported: ${src}`, error);
     }
   }
 
@@ -94,7 +140,7 @@ export class AudioManager {
   }
 
   playMenuSelectSound() {
-    this.playSound(AUDIO_FILES.menuSelect, this.soundEffectsVolume * 0.5); // Menu sounds quieter
+    this.playSound(AUDIO_FILES.menuSelect, this.soundEffectsVolume * 0.5);
   }
 
   setCustomMusic(url: string | null) {

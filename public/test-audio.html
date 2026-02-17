@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Áudio - Snake Flow</title>
+</head>
+<body>
+    <h1>Teste de Áudio - Snake Flow</h1>
+    <p>Testando carregamento via servidor Vite (porta 3006)</p>
+
+    <div style="margin: 20px 0;">
+        <h2>Música:</h2>
+        <audio controls>
+            <source src="/música.mp3.mpeg" type="audio/mpeg">
+            Seu navegador não suporta o elemento audio.
+        </audio>
+    </div>
+
+    <div style="margin: 20px 0;">
+        <h2>Muda de fase:</h2>
+        <audio controls>
+            <source src="/Muda de fase.mp3.mpeg" type="audio/mpeg">
+            Seu navegador não suporta o elemento audio.
+        </audio>
+    </div>
+
+    <div style="margin: 20px 0;">
+        <h2>Muda de opção:</h2>
+        <audio controls>
+            <source src="/muda de opção.mp3.mpeg" type="audio/mpeg">
+            Seu navegador não suporta o elemento audio.
+        </audio>
+    </div>
+
+    <div style="margin: 20px 0;">
+        <h2>Perde a fase:</h2>
+        <audio controls>
+            <source src="/perde a fase.mp3.mpeg" type="audio/mpeg">
+            Seu navegador não suporta o elemento audio.
+        </audio>
+    </div>
+
+    <div style="margin: 20px 0;">
+        <h2>Come fruta:</h2>
+        <audio controls>
+            <source src="/come fruta.mp3.mpeg" type="audio/mpeg">
+            Seu navegador não suporta o elemento audio.
+        </audio>
+    </div>
+
+    <script>
+        // Teste programático simulando AudioManager
+        const testAudio = async (src) => {
+            try {
+                console.log(`Testando: ${src}`);
+
+                // Primeiro testar fetch HEAD (como faz checkAudioExists)
+                try {
+                    const response = await fetch(src, { method: 'HEAD' });
+                    console.log(`HEAD ${src}: ${response.status} ${response.statusText}`);
+                    console.log(`Content-Type: ${response.headers.get('content-type')}`);
+                } catch (fetchError) {
+                    console.error(`HEAD fetch failed for ${src}:`, fetchError);
+                }
+
+                // Depois testar carregamento do Audio
+                const audio = new Audio(src);
+                audio.preload = "auto";
+
+                return new Promise((resolve) => {
+                    audio.addEventListener('canplaythrough', () => {
+                        console.log(`✅ ${src} - Audio carregado com sucesso`);
+                        resolve(true);
+                    });
+
+                    audio.addEventListener('error', (e) => {
+                        console.error(`❌ ${src} - Erro no carregamento:`, e);
+                        console.error(`Error code: ${e.target.error?.code}`);
+                        console.error(`Error message: ${e.target.error?.message}`);
+                        resolve(false);
+                    });
+
+                    audio.addEventListener('loadstart', () => console.log(`⏳ ${src} - Iniciando carregamento`));
+                    audio.addEventListener('loadeddata', () => console.log(`📊 ${src} - Dados carregados`));
+                    audio.addEventListener('canplay', () => console.log(`▶️ ${src} - Pode tocar`));
+
+                    audio.load();
+                });
+            } catch (error) {
+                console.error(`❌ ${src} - Erro geral:`, error);
+                return false;
+            }
+        };
+
+        // Testar todos os arquivos
+        window.addEventListener('load', async () => {
+            console.log('Iniciando testes de áudio via AudioManager simulation...');
+
+            const files = [
+                '/música.mp3.mpeg',
+                '/Muda de fase.mp3.mpeg',
+                '/muda de opção.mp3.mpeg',
+                '/perde a fase.mp3.mpeg',
+                '/come fruta.mp3.mpeg'
+            ];
+
+            for (const file of files) {
+                await testAudio(file);
+                console.log('---');
+            }
+
+            console.log('Testes concluídos.');
+        });
+    </script>
+</body>
+</html>

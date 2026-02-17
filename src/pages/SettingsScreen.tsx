@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
 import { ArrowLeft, Languages, Volume2, VolumeX, Sun, Moon, Monitor, Smartphone, Gamepad2, Upload, Trash2, RotateCcw } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useGlobalAudioManager } from "@/contexts/AudioManagerContext";
 import { useTranslation } from "react-i18next";
 import type { AppTheme, Difficulty } from "@/types/game";
 
@@ -9,6 +10,7 @@ const SettingsScreen = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { settings, updateSettings, customAudio, setCustomAudio, resetAllCustomAudio } = useSettings();
+  const audioManager = useGlobalAudioManager();
 
   // Função de vibração para mobile
   const vibrate = useCallback((ms: number = 50) => {
@@ -47,16 +49,44 @@ const SettingsScreen = () => {
             icon={settings.musicOn ? Volume2 : VolumeX}
             active={settings.musicOn}
             volume={settings.musicVolume}
-            onToggle={() => updateSettings({ musicOn: !settings.musicOn })}
-            onVolumeChange={(volume) => updateSettings({ musicVolume: volume })}
+            onToggle={() => {
+              const newMusicOn = !settings.musicOn;
+              updateSettings({ musicOn: newMusicOn });
+              // Controlar música imediatamente
+              if (newMusicOn) {
+                audioManager?.startMusic();
+              } else {
+                audioManager?.stopMusic();
+              }
+            }}
+            onVolumeChange={(volume) => {
+              updateSettings({ musicVolume: volume });
+              // Atualizar volume imediatamente
+              audioManager?.setMusicVolume(volume);
+            }}
           />
           <VolumeRow
             label={t("Sound Effects")}
             icon={settings.soundEffectsOn ? Volume2 : VolumeX}
             active={settings.soundEffectsOn}
             volume={settings.soundEffectsVolume}
-            onToggle={() => updateSettings({ soundEffectsOn: !settings.soundEffectsOn })}
-            onVolumeChange={(volume) => updateSettings({ soundEffectsVolume: volume })}
+            onToggle={() => {
+              const newSoundEffectsOn = !settings.soundEffectsOn;
+              updateSettings({ soundEffectsOn: newSoundEffectsOn });
+              // Tocar efeito de teste imediatamente se ativando
+              if (newSoundEffectsOn) {
+                audioManager?.playMenuSelectSound();
+              }
+            }}
+            onVolumeChange={(volume) => {
+              updateSettings({ soundEffectsVolume: volume });
+              // Atualizar volume imediatamente
+              audioManager?.setSoundEffectsVolume(volume);
+              // Tocar efeito de teste se efeitos estiverem ligados
+              if (settings.soundEffectsOn) {
+                audioManager?.playMenuSelectSound();
+              }
+            }}
           />
         </Section>
 
