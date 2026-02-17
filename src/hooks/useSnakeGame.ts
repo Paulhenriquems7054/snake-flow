@@ -219,7 +219,7 @@ export function useSnakeGame(
         if (calculatedPhase > prev.phase) {
           newPhase = calculatedPhase;
           // Every 3 phases, change theme
-          if (newPhase % 3 === 1 && newPhase > 1) {
+          if (newPhase % 3 === 0) {
             newThemeIndex = (prev.themeIndex + 1) % GAME_THEMES.length;
           }
           newSpeed = trainingModeRef.current ? config.baseSpeed : Math.max(50, config.baseSpeed - (newPhase - 1) * config.speedIncrement);
