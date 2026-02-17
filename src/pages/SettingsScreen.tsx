@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Languages, Volume2, VolumeX, Sun, Moon, Monitor, Smartphone, Gamepad2 } from "lucide-react";
+import { ArrowLeft, Languages, Volume2, VolumeX, Sun, Moon, Monitor, Smartphone, Gamepad2, Upload, Trash2, RotateCcw } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useTranslation } from "react-i18next";
 import type { AppTheme, Difficulty } from "@/types/game";
@@ -7,7 +7,7 @@ import type { AppTheme, Difficulty } from "@/types/game";
 const SettingsScreen = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { settings, updateSettings } = useSettings();
+  const { settings, updateSettings, customAudio, setCustomAudio, resetAllCustomAudio } = useSettings();
 
   const appThemes: { value: AppTheme; label: string; icon: typeof Sun }[] = [
     { value: "system", label: t("System"), icon: Monitor },
@@ -50,6 +50,42 @@ const SettingsScreen = () => {
             onToggle={() => updateSettings({ soundEffectsOn: !settings.soundEffectsOn })}
             onVolumeChange={(volume) => updateSettings({ soundEffectsVolume: volume })}
           />
+        </Section>
+
+        {/* Custom Audio (session) */}
+        <Section title={t("Custom Audio (session)")}>          
+          <CustomAudioRow
+            label={t("Background Music")}
+            currentName={customAudio.music ? t("Custom file") : t("Default")}
+            onSelect={(file) => handleAudioSelect("music", file, setCustomAudio)}
+            onClear={() => handleAudioClear("music", customAudio.music, setCustomAudio)}
+          />
+          <CustomAudioRow
+            label={t("Eat Effect")}
+            currentName={customAudio.eat ? t("Custom file") : t("Default")}
+            onSelect={(file) => handleAudioSelect("eat", file, setCustomAudio)}
+            onClear={() => handleAudioClear("eat", customAudio.eat, setCustomAudio)}
+          />
+          <CustomAudioRow
+            label={t("Phase Change Effect")}
+            currentName={customAudio.phase ? t("Custom file") : t("Default")}
+            onSelect={(file) => handleAudioSelect("phase", file, setCustomAudio)}
+            onClear={() => handleAudioClear("phase", customAudio.phase, setCustomAudio)}
+          />
+          <CustomAudioRow
+            label={t("Game Over Effect")}
+            currentName={customAudio.over ? t("Custom file") : t("Default")}
+            onSelect={(file) => handleAudioSelect("over", file, setCustomAudio)}
+            onClear={() => handleAudioClear("over", customAudio.over, setCustomAudio)}
+          />
+          <div className="flex justify-end">
+            <button
+              onClick={resetAllCustomAudio}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:border-primary/30 text-xs"
+            >
+              <RotateCcw className="w-4 h-4" /> {t("Restore defaults")}
+            </button>
+          </div>
         </Section>
 
         {/* Language */}
@@ -260,6 +296,68 @@ function VolumeRow({
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+function handleAudioSelect(
+  kind: "music" | "eat" | "phase" | "over",
+  file: File | null,
+  setCustomAudio: (kind: "music" | "eat" | "phase" | "over", url: string | null) => void
+) {
+  if (!file) return;
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  const allowed = ["audio/mpeg", "audio/ogg", "audio/wav", "audio/mp4", "audio/aac", "audio/x-m4a"];
+  if (file.size > maxSize || (file.type && !allowed.includes(file.type))) {
+    alert("Invalid audio file. Max 10MB. Supported: mp3, ogg, wav, m4a, aac.");
+    return;
+  }
+  const url = URL.createObjectURL(file);
+  setCustomAudio(kind, url);
+}
+
+function handleAudioClear(
+  kind: "music" | "eat" | "phase" | "over",
+  currentUrl: string | null,
+  setCustomAudio: (kind: "music" | "eat" | "phase" | "over", url: string | null) => void
+) {
+  if (currentUrl) URL.revokeObjectURL(currentUrl);
+  setCustomAudio(kind, null);
+}
+
+function CustomAudioRow({
+  label,
+  currentName,
+  onSelect,
+  onClear,
+}: {
+  label: string;
+  currentName: string;
+  onSelect: (file: File | null) => void;
+  onClear: () => void;
+}) {
+  const inputId = Math.random().toString(36).slice(2);
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-card border border-border">
+      <div>
+        <p className="text-sm font-medium text-foreground">{label}</p>
+        <p className="text-xs text-muted-foreground">{currentName}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          id={inputId}
+          type="file"
+          accept="audio/*"
+          className="hidden"
+          onChange={(e) => onSelect(e.target.files?.[0] ?? null)}
+        />
+        <label htmlFor={inputId} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:border-primary/30 text-xs cursor-pointer">
+          <Upload className="w-4 h-4" /> Upload
+        </label>
+        <button onClick={onClear} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:border-destructive/50 text-xs">
+          <Trash2 className="w-4 h-4" /> Clear
+        </button>
+      </div>
     </div>
   );
 }

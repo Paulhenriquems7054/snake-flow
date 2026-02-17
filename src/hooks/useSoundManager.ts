@@ -26,6 +26,9 @@ class AudioManager {
   private currentMusicTrack = 0;
   private customMusicUrl: string | null = null;
   private isCustomMusic = false;
+  private customEatUrl: string | null = null;
+  private customOverUrl: string | null = null;
+  private customPhaseUrl: string | null = null;
 
   private loadAudio(src: string): HTMLAudioElement {
     if (!this.audioCache.has(src)) {
@@ -50,15 +53,18 @@ class AudioManager {
   }
 
   playEatSound() {
-    this.playSound(AUDIO_FILES.eat, this.soundEffectsVolume * 0.7); // Slightly lower for eat sound
+    const src = this.customEatUrl ?? AUDIO_FILES.eat;
+    this.playSound(src, this.soundEffectsVolume * 0.7);
   }
 
   playGameOverSound() {
-    this.playSound(AUDIO_FILES.gameOver, this.soundEffectsVolume * 0.8); // Game over slightly louder
+    const src = this.customOverUrl ?? AUDIO_FILES.gameOver;
+    this.playSound(src, this.soundEffectsVolume * 0.8);
   }
 
   playPhaseSound() {
-    this.playSound(AUDIO_FILES.phaseChange, this.soundEffectsVolume * 0.6);
+    const src = this.customPhaseUrl ?? AUDIO_FILES.phaseChange;
+    this.playSound(src, this.soundEffectsVolume * 0.6);
   }
 
   playMenuSelectSound() {
@@ -74,6 +80,11 @@ class AudioManager {
       this.stopMusic();
       this.startMusic();
     }
+  }
+  setCustomEffect(kind: "eat" | "over" | "phase", url: string | null) {
+    if (kind === "eat") this.customEatUrl = url;
+    if (kind === "over") this.customOverUrl = url;
+    if (kind === "phase") this.customPhaseUrl = url;
   }
 
   getNextMusicTrack(): string {
@@ -165,7 +176,8 @@ export function useSoundManager(
   musicOn: boolean,
   musicVolume: number,
   soundEffectsOn: boolean,
-  soundEffectsVolume: number
+  soundEffectsVolume: number,
+  custom?: { music?: string | null; eat?: string | null; over?: string | null; phase?: string | null }
 ) {
   const audioManagerRef = useRef<AudioManager | null>(null);
 
@@ -181,6 +193,20 @@ export function useSoundManager(
   const setCustomMusic = useCallback((url: string | null) => {
     audioManagerRef.current?.setCustomMusic(url);
   }, []);
+  const setCustomEffect = useCallback((kind: "eat" | "over" | "phase", url: string | null) => {
+    audioManagerRef.current?.setCustomEffect(kind, url);
+  }, []);
+
+  // Apply initial custom URLs (session)
+  useEffect(() => {
+    if (!audioManagerRef.current) return;
+    if (custom) {
+      if (typeof custom.music !== "undefined") audioManagerRef.current.setCustomMusic(custom.music ?? null);
+      if (typeof custom.eat !== "undefined") audioManagerRef.current.setCustomEffect("eat", custom.eat ?? null);
+      if (typeof custom.over !== "undefined") audioManagerRef.current.setCustomEffect("over", custom.over ?? null);
+      if (typeof custom.phase !== "undefined") audioManagerRef.current.setCustomEffect("phase", custom.phase ?? null);
+    }
+  }, [custom]);
 
   // Start/stop music based on setting
   useEffect(() => {
@@ -232,5 +258,5 @@ export function useSoundManager(
     audioManagerRef.current?.stopMusic();
   }, []);
 
-  return { playEat, playOver, playPhase, playMenuSelect, pauseMusic, resumeMusic, stopMusic, setCustomMusic };
+  return { playEat, playOver, playPhase, playMenuSelect, pauseMusic, resumeMusic, stopMusic, setCustomMusic, setCustomEffect };
 }

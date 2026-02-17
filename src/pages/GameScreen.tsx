@@ -11,18 +11,23 @@ import GameCanvas from "@/components/GameCanvas";
 const GameScreen = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { settings, updateRecord, saveData, setSaveData } = useSettings();
+  const { settings, updateRecord, saveData, setSaveData, customAudio } = useSettings();
   const [showGameOver, setShowGameOver] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [boardSize, setBoardSize] = useState<BoardSize>({ cols: CELL_COUNT, rows: CELL_COUNT });
   const [boardMeasured, setBoardMeasured] = useState(false);
   const [gameInitialized, setGameInitialized] = useState(false);
   const gameAreaRef = useRef<HTMLDivElement>(null);
-  const touchRef = useRef<{ x: number; y: number } | null>(null);
   const [touchFeedback, setTouchFeedback] = useState<{ x: number; y: number } | null>(null);
+  const isMobile = typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   const { playEat, playOver, playPhase, pauseMusic, resumeMusic, stopMusic } =
-    useSoundManager(settings.musicOn, settings.musicVolume, settings.soundEffectsOn, settings.soundEffectsVolume);
+    useSoundManager(settings.musicOn, settings.musicVolume, settings.soundEffectsOn, settings.soundEffectsVolume, {
+      music: customAudio.music,
+      eat: customAudio.eat,
+      over: customAudio.over,
+      phase: customAudio.phase,
+    });
 
   const vibrate = useCallback(
     (ms: number) => {
@@ -157,49 +162,54 @@ const GameScreen = () => {
     return () => window.removeEventListener("keydown", handleKey);
   }, [changeDirection, togglePause]);
 
-  // Touch/swipe controls
+  // Touch controls by single tap: divide screen into 4 areas
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Bloqueia comportamento padrão do navegador (scroll/zoom/pull-to-refresh)
+    e.preventDefault();
+
+    if (!isMobile) return; // ativa apenas em mobile
+
     const touch = e.touches[0];
-    touchRef.current = { x: touch.clientX, y: touch.clientY };
-    // Mostrar feedback visual do toque
     setTouchFeedback({ x: touch.clientX, y: touch.clientY });
+
+    const gameArea = gameAreaRef.current;
+    if (!gameArea) return;
+
+    const rect = gameArea.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    const w = rect.width;
+    const h = rect.height;
+
+    // Regiões: tercos da tela
+    const left = x < w / 3;
+    const right = x > (2 * w) / 3;
+    const top = y < h / 3;
+    const bottom = y > (2 * h) / 3;
+
+    // Define direção com prioridade vertical quando em cantos, depois horizontal
+    let dir: Direction | null = null;
+    if (top) dir = "UP";
+    else if (bottom) dir = "DOWN";
+    else if (left) dir = "LEFT";
+    else if (right) dir = "RIGHT";
+
+    if (dir) {
+      // Regras de segurança: a lógica de changeDirection já ignora inversões imediatas
+      changeDirection(dir);
+      vibrate(20);
+    }
+
+    // Esconde feedback rapidamente
+    setTimeout(() => setTouchFeedback(null), 120);
   };
 
+  // Não usamos move/end para evitar qualquer gesto contínuo
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchRef.current && touchFeedback) {
-      const touch = e.touches[0];
-      setTouchFeedback({ x: touch.clientX, y: touch.clientY });
-    }
+    e.preventDefault();
   };
-
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchRef.current) {
-      setTouchFeedback(null);
-      return;
-    }
-
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - touchRef.current.x;
-    const dy = touch.clientY - touchRef.current.y;
-    const minSwipe = 20; // Reduzido para ser mais responsivo
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    // Só muda direção se o swipe for significativo
-    if (distance > minSwipe) {
-      if (Math.abs(dx) > Math.abs(dy)) {
-        if (Math.abs(dx) > minSwipe) {
-          changeDirection(dx > 0 ? "RIGHT" : "LEFT");
-          vibrate(20); // Feedback tátil leve
-        }
-      } else {
-        if (Math.abs(dy) > minSwipe) {
-          changeDirection(dy > 0 ? "DOWN" : "UP");
-          vibrate(20); // Feedback tátil leve
-        }
-      }
-    }
-
-    touchRef.current = null;
+    e.preventDefault();
     setTouchFeedback(null);
   };
 
@@ -237,7 +247,7 @@ const GameScreen = () => {
   return (
     <div
       className="fixed inset-0 flex flex-col select-none"
-      style={{ backgroundColor: currentTheme.bgColor }}
+      style={{ backgroundColor: currentTheme.bgColor, touchAction: "none" }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -277,7 +287,7 @@ const GameScreen = () => {
       </div>
 
       {/* Game area */}
-      <div ref={gameAreaRef} className="flex-1 flex items-center justify-center p-2 relative">
+      <div ref={gameAreaRef} className="flex-1 flex items-center justify-center p-2 relative" style={{ touchAction: "none" }}>
         <GameCanvas gameState={gameState} theme={currentTheme} boardSize={boardSize} />
 
         {/* Touch feedback indicator */}

@@ -9,6 +9,15 @@ interface SettingsContextType {
   updateRecord: (score: number, phase: number, difficulty: Settings["difficulty"]) => void;
   saveData: SaveData | null;
   setSaveData: (data: SaveData | null) => void;
+  // Session-only custom audio URLs (blob URLs)
+  customAudio: {
+    music: string | null;
+    eat: string | null;
+    phase: string | null;
+    over: string | null;
+  };
+  setCustomAudio: (kind: "music" | "eat" | "phase" | "over", url: string | null) => void;
+  resetAllCustomAudio: () => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | null>(null);
@@ -37,6 +46,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [saveData, setSaveDataState] = useState<SaveData | null>(() =>
     loadFromStorage(SAVE_KEY, null)
   );
+  // Session-only custom audio (do not persist blob URLs across reloads)
+  const [customAudio, setCustomAudioState] = useState<{ music: string | null; eat: string | null; phase: string | null; over: string | null }>({
+    music: null,
+    eat: null,
+    phase: null,
+    over: null,
+  });
 
   useEffect(() => {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -76,8 +92,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSaveDataState(data);
   };
 
+  const setCustomAudio = (kind: "music" | "eat" | "phase" | "over", url: string | null) => {
+    setCustomAudioState((prev) => ({ ...prev, [kind]: url }));
+  };
+  const resetAllCustomAudio = () => {
+    // Revoke existing URLs if any
+    Object.values(customAudio).forEach((u) => {
+      if (u) URL.revokeObjectURL(u);
+    });
+    setCustomAudioState({ music: null, eat: null, phase: null, over: null });
+  };
+
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, record, updateRecord, saveData, setSaveData }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, record, updateRecord, saveData, setSaveData, customAudio, setCustomAudio, resetAllCustomAudio }}>
       {children}
     </SettingsContext.Provider>
   );
