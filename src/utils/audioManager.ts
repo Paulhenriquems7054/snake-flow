@@ -1,18 +1,18 @@
 // Audio files from public folder
 const AUDIO_FILES = {
-  eat: "/come fruta.mp3",
-  gameOver: "/perde a fase.mp3",
-  phaseChange: "/Muda de fase.mp3",
-  music: "/música.mp3",
-  menuSelect: "/muda de opção.mp3"
+  eat: "/come fruta.mp3.mpeg",
+  gameOver: "/perde a fase.mp3.mpeg",
+  phaseChange: "/Muda de fase.mp3.mpeg",
+  music: "/música.mp3.mpeg",
+  menuSelect: "/muda de opção.mp3.mpeg"
 } as const;
 
 // Multiple background music tracks
 const BACKGROUND_MUSIC_TRACKS = [
-  "/música.mp3",
-  "/música2.mp3",
-  "/música3.mp3",
-  "/música4.mp3"
+  "/música.mp3.mpeg",
+  "/música2.mp3.mpeg",
+  "/música3.mp3.mpeg",
+  "/música4.mp3.mpeg"
 ] as const;
 
 export class AudioManager {
