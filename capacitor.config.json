@@ -1,0 +1,6 @@
+{
+  "appId": "com.snakeflow.app",
+  "appName": "Snake Flow",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

@@ -1,24 +1,24 @@
-// Audio files from public folder
+// Audio files served from Vite `public/` folder.
+// IMPORTANT: these paths must match filenames EXACTLY (use unaccented, no spaces)
+// to avoid URL encoding issues on some hosts and Android WebViews.
 const AUDIO_FILES = {
-  eat: "/come fruta.mp3.mpeg",
-  gameOver: "/perde a fase.mp3.mpeg",
-  phaseChange: "/Muda de fase.mp3.mpeg",
-  music: "/música.mp3.mpeg",
-  menuSelect: "/muda de opção.mp3.mpeg"
+  eat: "/come-fruta.mp3",
+  gameOver: "/perde-a-fase.mp3",
+  phaseChange: "/muda-de-fase.mp3",
+  music: "/musica.mp3",
+  menuSelect: "/muda-de-opcao.mp3",
 } as const;
 
-// Multiple background music tracks
+// Background music tracks (fallback rotation). Keep only files that exist in `public/`.
 const BACKGROUND_MUSIC_TRACKS = [
-  "/música.mp3.mpeg",
-  "/música2.mp3.mpeg",
-  "/música3.mp3.mpeg",
-  "/música4.mp3.mpeg"
+  AUDIO_FILES.music,
 ] as const;
 
 export class AudioManager {
   private audioCache: Map<string, HTMLAudioElement> = new Map();
   private musicAudio: HTMLAudioElement | null = null;
   private isMusicPlaying = false;
+  private isMusicUnlockPending = false;
   private musicVolume = 0.3;
   private soundEffectsVolume = 0.6;
   private currentMusicTrack = 0;
@@ -45,11 +45,12 @@ export class AudioManager {
 
       // Add error handling for loading
       audio.addEventListener('error', (e) => {
+        const target = (e.currentTarget ?? e.target) as HTMLAudioElement | null;
         console.error(`[AudioManager] Failed to load audio file: ${src}`, e);
-        console.error(`[AudioManager] Error code: ${e.target?.error?.code}`);
-        console.error(`[AudioManager] Error message: ${e.target?.error?.message}`);
-        console.error(`[AudioManager] Network state: ${e.target?.networkState}`);
-        console.error(`[AudioManager] Ready state: ${e.target?.readyState}`);
+        console.error(`[AudioManager] Error code: ${target?.error?.code}`);
+        console.error(`[AudioManager] Error message: ${target?.error?.message}`);
+        console.error(`[AudioManager] Network state: ${target?.networkState}`);
+        console.error(`[AudioManager] Ready state: ${target?.readyState}`);
       });
 
       audio.addEventListener('canplaythrough', () => {
@@ -177,7 +178,8 @@ export class AudioManager {
         const musicSrc = this.getNextMusicTrack();
         this.musicAudio = this.loadAudio(musicSrc);
         this.musicAudio.loop = true;
-        this.musicAudio.volume = this.musicVolume;
+        // Start muted and fade in to avoid abrupt volume differences on some platforms
+        this.musicAudio.volume = 0;
 
         // Add ended event listener to cycle through tracks
         this.musicAudio.addEventListener('ended', () => {
@@ -190,10 +192,55 @@ export class AudioManager {
         });
       }
 
-      this.musicAudio.play().then(() => {
+      // Try to unlock audio via Web Audio API before attempting to play
+      const tryPlay = async () => {
+        await this.ensureAudioUnlocked();
+        return this.musicAudio!.play();
+      };
+
+      tryPlay().then(() => {
         this.isMusicPlaying = true;
-      }).catch(() => {
-        // Music play failed, silently ignore
+        // Fade in volume over 800ms
+        const target = isFinite(this.musicVolume) ? this.musicVolume : 0.3;
+        const start = performance.now();
+        const duration = 800;
+        const step = () => {
+          const now = performance.now();
+          const t = Math.min(1, (now - start) / duration);
+          try {
+            if (this.musicAudio) this.musicAudio.volume = target * t;
+          } catch {}
+          if (t < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }).catch((error: any) => {
+        // Autoplay policies often block music because we start via useEffect.
+        // If blocked, retry once on next user interaction.
+        if (error?.name === "NotAllowedError") {
+          if (this.isMusicUnlockPending) return;
+          this.isMusicUnlockPending = true;
+
+          const unlockMusic = async () => {
+            try {
+              await this.musicAudio?.play();
+              this.isMusicPlaying = true;
+              this.isMusicUnlockPending = false;
+              document.removeEventListener("click", unlockMusic);
+              document.removeEventListener("touchstart", unlockMusic);
+              document.removeEventListener("keydown", unlockMusic);
+            } catch (e) {
+              // If it still fails, allow future retries
+              this.isMusicUnlockPending = false;
+              console.warn("[AudioManager] Failed to unlock music:", e);
+            }
+          };
+
+          document.addEventListener("click", unlockMusic, { once: true });
+          document.addEventListener("touchstart", unlockMusic, { once: true });
+          document.addEventListener("keydown", unlockMusic, { once: true });
+        } else {
+          console.warn("[AudioManager] Music play failed:", error?.name, error?.message);
+        }
       });
     } catch {
       // Audio not supported
@@ -241,5 +288,34 @@ export class AudioManager {
     this.stopMusic();
     this.audioCache.clear();
     this.musicAudio = null;
+  }
+  /**
+   * Try to unlock audio by resuming/using the Web Audio API.
+   * This helps WebViews that block HTMLAudio autoplay until a user gesture
+   * resumes an AudioContext or a short buffer is played.
+   */
+  private async ensureAudioUnlocked(): Promise<void> {
+    try {
+      const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AC) return;
+      const ctx = new AC();
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
+      // Play tiny silent buffer to ensure audio is unlocked
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(ctx.destination);
+      src.start(0);
+      // Stop immediately
+      src.stop(0);
+      // Close context if supported
+      if (typeof (ctx as any).close === 'function') {
+        try { (ctx as any).close(); } catch {}
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 }

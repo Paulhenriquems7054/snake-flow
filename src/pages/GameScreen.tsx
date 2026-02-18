@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useSnakeGame } from "@/hooks/useSnakeGame";
 import { useSoundManager } from "@/hooks/useSoundManager";
+import { useGlobalAudioManager } from "@/contexts/AudioManagerContext";
 import { CELL_COUNT, MIN_CELL_SIZE, type BoardSize, type Direction, type SaveData } from "@/types/game";
 import GameCanvas from "@/components/GameCanvas";
 
@@ -28,6 +29,7 @@ const GameScreen = () => {
       over: customAudio.over,
       phase: customAudio.phase,
     });
+  const audioManager = useGlobalAudioManager();
 
   const vibrate = useCallback(
     (ms: number) => {
@@ -205,6 +207,20 @@ const GameScreen = () => {
       changeDirection(dir);
       vibrate(20);
     }
+
+    // Tenta garantir que a música seja iniciada/desbloqueada após primeiro toque no celular.
+    // Chamar antes de `preventDefault()` para que o evento seja considerado um gesto do usuário
+    // pelo WebView/Android autoplay policy.
+    try {
+      if (settings.musicOn) {
+        // preferir usar audioManager direto para iniciar/desbloquejar
+        audioManager?.startMusic();
+      }
+    } catch {}
+
+    // Bloqueia comportamento padrão do navegador (scroll/zoom/pull-to-refresh)
+    // após tentarmos iniciar a música para que o toque seja visto como interação do usuário.
+    e.preventDefault();
 
     // Esconde feedback rapidamente
     setTimeout(() => setTouchFeedback(null), 120);

@@ -3,12 +3,12 @@ import { AudioManager } from "@/utils/audioManager";
 
 const AudioManagerContext = createContext<AudioManager | null>(null);
 
-// Global AudioManager instance
-let globalAudioManager: AudioManager | null = null;
-
 export function AudioManagerProvider({ children }: { children: ReactNode }) {
+  const [manager, setManager] = useState<AudioManager | null>(null);
+
   useEffect(() => {
-    globalAudioManager = new AudioManager();
+    const m = new AudioManager();
+    setManager(m);
 
     // Initialize audio context on first user interaction
     const initAudio = async () => {
@@ -28,9 +28,29 @@ export function AudioManagerProvider({ children }: { children: ReactNode }) {
       document.addEventListener(event, initAudio, { once: true });
     });
 
+    // Global fallback: attempt to start/unlock music on first real user interaction.
+    // This helps when WebViews (APK) still block audio unless the gesture triggers playback.
+    const unlockMusicFallback = async () => {
+      try {
+        // Try to initialize Web Audio API first (resume context)
+        await initAudio();
+        // Then attempt to start music via the AudioManager instance.
+        // startMusic() is safe to call — it will no-op if music is already playing.
+        try {
+          m.startMusic();
+        } catch (e) {
+          // ignore any errors from starting music
+        }
+      } catch {}
+    };
+
+    events.forEach(event => {
+      document.addEventListener(event, unlockMusicFallback, { once: true });
+    });
+
     return () => {
-      globalAudioManager?.destroy();
-      globalAudioManager = null;
+      m.destroy();
+      setManager(null);
       events.forEach(event => {
         document.removeEventListener(event, initAudio);
       });
@@ -38,7 +58,7 @@ export function AudioManagerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AudioManagerContext.Provider value={globalAudioManager}>
+    <AudioManagerContext.Provider value={manager}>
       {children}
     </AudioManagerContext.Provider>
   );

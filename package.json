@@ -11,9 +11,16 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "echo 'No tests configured'",
-    "test:watch": "echo 'No tests configured'"
+    "test:watch": "echo 'No tests configured'",
+    "cap:init": "npx cap init",
+    "cap:add:android": "npx cap add android",
+    "cap:copy": "npx cap copy",
+    "cap:open:android": "npx cap open android",
+    "build:android": "npm run build && npx cap copy && npx cap open android",
+    "copy:icons": "node scripts/copy-icons.cjs"
   },
   "dependencies": {
+    "@capacitor/android": "^8.1.0",
     "@capacitor/cli": "^8.1.0",
     "@capacitor/core": "^8.1.0",
     "@hookform/resolvers": "^3.10.0",
