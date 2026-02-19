@@ -150,7 +150,7 @@ const GameCanvas = ({ gameState, theme, boardSize }: Props) => {
       drawSnake(ctx, gameState.snake, mm.cellW, mm.cellH, theme.snakeColor, theme.snakeHeadColor);
 
       // Fruit (circle)
-      drawFood(ctx, gameState.fruit, mm.cellW, mm.cellH, theme.fruitColor);
+      drawFood(ctx, gameState.fruit, mm.cellW, mm.cellH, theme.fruitColor, theme.bgColor);
 
       // Particles
       const particles = particlesRef.current;
@@ -256,13 +256,33 @@ function drawSnake(
   });
 }
 
-function drawFood(ctx: CanvasRenderingContext2D, food: Position, cellW: number, cellH: number, foodColor: string) {
+function isDarkHex(hex: string) {
+  const v = hex.startsWith("#") ? hex.slice(1) : hex;
+  if (v.length !== 6) return true;
+  const r = parseInt(v.slice(0, 2), 16);
+  const g = parseInt(v.slice(2, 4), 16);
+  const b = parseInt(v.slice(4, 6), 16);
+  // Perceived luminance (sRGB)
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return lum < 0.5;
+}
+
+function drawFood(
+  ctx: CanvasRenderingContext2D,
+  food: Position,
+  cellW: number,
+  cellH: number,
+  foodColor: string,
+  bgColor: string
+) {
   ctx.fillStyle = foodColor;
   ctx.imageSmoothingEnabled = true;
 
   const cx = food.x * cellW + cellW / 2;
   const cy = food.y * cellH + cellH / 2;
-  const radius = Math.min(cellW, cellH) / 2.5;
+  const base = Math.min(cellW, cellH);
+  // Slightly bigger than before, still safely inside the cell.
+  const radius = base / 2.25;
 
   ctx.shadowColor = foodColor;
   ctx.shadowBlur = 10;
@@ -270,6 +290,20 @@ function drawFood(ctx: CanvasRenderingContext2D, food: Position, cellW: number, 
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.fill();
   ctx.shadowBlur = 0;
+
+  // Contrast outline so the fruit stays visible at high zoom / bright themes.
+  const darkBg = isDarkHex(bgColor);
+  ctx.lineWidth = Math.max(1, base * 0.08);
+  ctx.strokeStyle = darkBg ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.45)";
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius - ctx.lineWidth / 2, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Small highlight gives a "3D" cue and prevents flat blending.
+  ctx.fillStyle = darkBg ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.35)";
+  ctx.beginPath();
+  ctx.arc(cx - radius * 0.25, cy - radius * 0.25, radius * 0.35, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 export default GameCanvas;
