@@ -277,7 +277,32 @@ export function useSnakeGame(
 
   const resumeSave = useCallback((saved: GameState) => {
     directionRef.current = saved.direction;
-    setGameState({ ...saved, isRunning: true, isPaused: false });
+    const { cols, rows } = boardSizeRef.current;
+    const wrap = (n: number, m: number) => ((n % m) + m) % m;
+
+    // When the board size changes (e.g. user increased zoom), old saved coordinates may fall
+    // outside the current grid. Normalize everything back into bounds.
+    const wrappedSnake = (saved.snake ?? []).map((p) => ({
+      x: wrap(p.x, cols),
+      y: wrap(p.y, rows),
+    }));
+    let wrappedFruit = {
+      x: wrap(saved.fruit?.x ?? 0, cols),
+      y: wrap(saved.fruit?.y ?? 0, rows),
+    };
+
+    // If fruit would collide after wrapping, pick a new position.
+    if (wrappedSnake.some((s) => s.x === wrappedFruit.x && s.y === wrappedFruit.y)) {
+      wrappedFruit = randomFruitPos(wrappedSnake, cols, rows);
+    }
+
+    setGameState({
+      ...saved,
+      snake: wrappedSnake,
+      fruit: wrappedFruit,
+      isRunning: true,
+      isPaused: false,
+    });
   }, []);
 
   const togglePause = useCallback(() => {
