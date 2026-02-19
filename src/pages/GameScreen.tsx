@@ -181,28 +181,24 @@ const GameScreen = () => {
     const w = rect.width;
     const h = rect.height;
 
-    // Regiões: tercos da tela
-    const left = x < w / 3;
-    const right = x > (2 * w) / 3;
-    const top = y < h / 3;
-    const bottom = y > (2 * h) / 3;
-
-    // Define direção com prioridade vertical quando em cantos, depois horizontal
-    let dir: Direction | null = null;
-    if (top) dir = "UP";
-    else if (bottom) dir = "DOWN";
-    else if (left) dir = "LEFT";
-    else if (right) dir = "RIGHT";
-
-    if (dir) {
-      // Regras de segurança: a lógica de changeDirection já ignora inversões imediatas
-      changeDirection(dir);
-      vibrate(20);
+    // Direção baseada em "quadrantes" relativos ao centro:
+    // - Se o toque estiver mais acima/abaixo do centro do que à esquerda/direita, vai para cima/baixo
+    // - Caso contrário, vai para esquerda/direita
+    const dx = x - w / 2;
+    const dy = y - h / 2;
+    let dir: Direction;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      dir = dx < 0 ? "LEFT" : "RIGHT";
+    } else {
+      dir = dy < 0 ? "UP" : "DOWN";
     }
+
+    // Regras de segurança: a lógica de changeDirection já ignora inversões imediatas
+    changeDirection(dir);
+    vibrate(20);
 
     // Unlocking audio on first touch is handled globally by AudioManagerProvider.
     // Prevent default to avoid scrolling behavior on mobile.
-    e.preventDefault();
 
     // Esconde feedback rapidamente
     setTimeout(() => setTouchFeedback(null), 120);
