@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { Play, Trophy, Settings, Info, RotateCcw } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useSoundManager } from "@/hooks/useSoundManager";
@@ -7,8 +8,10 @@ import { useTranslation } from "react-i18next";
 const MenuScreen = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { record, saveData, setSaveData } = useSettings();
-  const { playMenuSelect } = useSoundManager(true, 0.3, true, 0.6); // Always play menu sounds
+  const { record, saveData, setSaveData, settings } = useSettings();
+  const { playMenuSelect } = useSoundManager(settings.musicOn, settings.musicVolume, true, settings.soundEffectsVolume); // Respect global music setting, always play menu effects
+
+  // Background music is managed globally by AudioManagerProvider and Settings.
 
   const hasSave = !!saveData;
 
@@ -82,7 +85,7 @@ const MenuScreen = () => {
           {menuItems.map((item) => (
             <button
               key={item.label}
-              onClick={() => {
+            onClick={() => {
                 playMenuSelect();
                 navigate(item.path);
               }}

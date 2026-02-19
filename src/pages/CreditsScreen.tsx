@@ -20,7 +20,7 @@ const CreditsScreen = () => {
         <div className="text-center space-y-3">
           <h2 className="font-game text-2xl neon-text tracking-wider">SNAKE FLOW</h2>
           <div className="space-y-1 text-muted-foreground text-sm">
-            <p>{t("Developed by")} ❤️</p>
+            <p>{t("Developed by")} PHM</p>
             <p className="font-semibold text-foreground">Version 1.0.0</p>
             <p>2026</p>
           </div>

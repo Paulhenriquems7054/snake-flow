@@ -3,7 +3,7 @@
 // to avoid URL encoding issues on some hosts and Android WebViews.
 const AUDIO_FILES = {
   eat: "/come-fruta.mp3",
-  gameOver: "/perde-a-fase.mp3",
+  gameOver: "/perde-afase.mp3",
   phaseChange: "/muda-de-fase.mp3",
   music: "/musica.mp3",
   menuSelect: "/muda-de-opcao.mp3",
@@ -19,6 +19,8 @@ export class AudioManager {
   private musicAudio: HTMLAudioElement | null = null;
   private isMusicPlaying = false;
   private isMusicUnlockPending = false;
+  private hasUserUnlockedAudio = false;
+  private webAudioUnlockAttempted = false;
   private musicVolume = 0.3;
   private soundEffectsVolume = 0.6;
   private currentMusicTrack = 0;
@@ -42,6 +44,11 @@ export class AudioManager {
       console.log(`[AudioManager] Loading audio: ${src}`);
       const audio = new Audio(src);
       audio.preload = "auto";
+      // Helps some Android WebViews treat audio as inline media.
+      try {
+        audio.setAttribute("playsinline", "true");
+        audio.setAttribute("webkit-playsinline", "true");
+      } catch {}
 
       // Add error handling for loading
       audio.addEventListener('error', (e) => {
@@ -79,6 +86,12 @@ export class AudioManager {
   async playSound(src: string, volume = 0.3) {
     console.log(`[AudioManager] Attempting to play sound: ${src} at volume ${volume}`);
     try {
+      // If the app has already been unlocked by a gesture once, this is a no-op.
+      // If it hasn't, some WebViews will still block play() outside a gesture — we handle that below.
+      try {
+        await this.ensureAudioUnlocked();
+      } catch {}
+
       const audio = this.loadAudio(src);
       audio.volume = volume;
       audio.currentTime = 0; // Reset to start
@@ -145,8 +158,12 @@ export class AudioManager {
   }
 
   setCustomMusic(url: string | null) {
-    this.customMusicUrl = url;
-    this.isCustomMusic = !!url;
+    const next = url ?? null;
+    // Avoid restarting music when the URL hasn't actually changed (common on route mounts).
+    if (next === this.customMusicUrl) return;
+
+    this.customMusicUrl = next;
+    this.isCustomMusic = !!next;
 
     // If music is currently playing, restart with new music
     if (this.isMusicPlaying) {
@@ -155,9 +172,19 @@ export class AudioManager {
     }
   }
   setCustomEffect(kind: "eat" | "over" | "phase", url: string | null) {
-    if (kind === "eat") this.customEatUrl = url;
-    if (kind === "over") this.customOverUrl = url;
-    if (kind === "phase") this.customPhaseUrl = url;
+    const next = url ?? null;
+    if (kind === "eat") {
+      if (this.customEatUrl === next) return;
+      this.customEatUrl = next;
+    }
+    if (kind === "over") {
+      if (this.customOverUrl === next) return;
+      this.customOverUrl = next;
+    }
+    if (kind === "phase") {
+      if (this.customPhaseUrl === next) return;
+      this.customPhaseUrl = next;
+    }
   }
 
   getNextMusicTrack(): string {
@@ -171,15 +198,29 @@ export class AudioManager {
   }
 
   startMusic() {
-    if (this.isMusicPlaying) return;
+    console.debug("[AudioManager] startMusic() called — isMusicPlaying:", this.isMusicPlaying);
+    // If we already consider music playing, try to resume if the element is paused.
+    if (this.isMusicPlaying) {
+      if (this.musicAudio && this.musicAudio.paused) {
+        this.musicAudio.play().then(() => {
+          this.isMusicPlaying = true;
+          console.debug("[AudioManager] resumed paused musicAudio");
+        }).catch((e) => {
+          console.warn("[AudioManager] failed to resume paused musicAudio", e);
+        });
+      }
+      return;
+    }
 
     try {
       if (!this.musicAudio) {
         const musicSrc = this.getNextMusicTrack();
         this.musicAudio = this.loadAudio(musicSrc);
         this.musicAudio.loop = true;
-        // Start muted and fade in to avoid abrupt volume differences on some platforms
+        // Ensure autoplay-friendly start: start muted and with volume 0, then unmute after play succeeds.
+        this.musicAudio.muted = true;
         this.musicAudio.volume = 0;
+        console.debug("[AudioManager] created musicAudio src=", musicSrc);
 
         // Add ended event listener to cycle through tracks
         this.musicAudio.addEventListener('ended', () => {
@@ -200,8 +241,12 @@ export class AudioManager {
 
       tryPlay().then(() => {
         this.isMusicPlaying = true;
-        // Fade in volume over 800ms
+        console.debug("[AudioManager] musicAudio.play() succeeded");
+        // Unmute and fade in volume over 800ms
         const target = isFinite(this.musicVolume) ? this.musicVolume : 0.3;
+        try {
+          if (this.musicAudio) this.musicAudio.muted = false;
+        } catch {}
         const start = performance.now();
         const duration = 800;
         const step = () => {
@@ -214,6 +259,7 @@ export class AudioManager {
         };
         requestAnimationFrame(step);
       }).catch((error: any) => {
+        console.warn("[AudioManager] musicAudio.play() failed:", error);
         // Autoplay policies often block music because we start via useEffect.
         // If blocked, retry once on next user interaction.
         if (error?.name === "NotAllowedError") {
@@ -225,6 +271,7 @@ export class AudioManager {
               await this.musicAudio?.play();
               this.isMusicPlaying = true;
               this.isMusicUnlockPending = false;
+              try { if (this.musicAudio) this.musicAudio.muted = false; } catch {}
               document.removeEventListener("click", unlockMusic);
               document.removeEventListener("touchstart", unlockMusic);
               document.removeEventListener("keydown", unlockMusic);
@@ -248,10 +295,31 @@ export class AudioManager {
   }
 
   stopMusic() {
+    console.debug("[AudioManager] stopMusic() called");
+    // Trace caller for debugging
+    try { console.trace(); } catch {}
+
+    // If user is on game route, avoid fully pausing music — fade to low volume instead.
+    try {
+      const path = typeof window !== "undefined" ? window.location.pathname : "";
+      if (path && path.startsWith("/game")) {
+        console.debug("[AudioManager] stopMusic() intercepted on /game — fading instead of pausing");
+        this.fadeForPause();
+        this.isMusicPlaying = true; // keep flag so resume logic won't try to recreate element
+        return;
+      }
+    } catch (e) {
+      // ignore
+    }
+
     this.isMusicPlaying = false;
     if (this.musicAudio) {
-      this.musicAudio.pause();
-      this.musicAudio.currentTime = 0;
+      try {
+        this.musicAudio.pause();
+        this.musicAudio.currentTime = 0;
+      } catch (e) {
+        console.warn("[AudioManager] stopMusic() error", e);
+      }
     }
   }
 
@@ -271,15 +339,17 @@ export class AudioManager {
   }
 
   fadeForPause() {
+    console.debug("[AudioManager] fadeForPause()");
     if (this.musicAudio) {
       const fadeVolume = this.musicVolume * 0.3;
-      this.musicAudio.volume = isFinite(fadeVolume) ? fadeVolume : 0.1;
+      try { this.musicAudio.volume = isFinite(fadeVolume) ? fadeVolume : 0.1; } catch {}
     }
   }
 
   fadeForResume() {
+    console.debug("[AudioManager] fadeForResume()");
     if (this.musicAudio) {
-      this.musicAudio.volume = isFinite(this.musicVolume) ? this.musicVolume : 0.3;
+      try { this.musicAudio.volume = isFinite(this.musicVolume) ? this.musicVolume : 0.3; } catch {}
     }
   }
 
@@ -294,7 +364,11 @@ export class AudioManager {
    * This helps WebViews that block HTMLAudio autoplay until a user gesture
    * resumes an AudioContext or a short buffer is played.
    */
-  private async ensureAudioUnlocked(): Promise<void> {
+  private async ensureAudioUnlocked(opts: { force?: boolean } = {}): Promise<void> {
+    // Avoid creating AudioContexts on every sound call; but allow a forced retry
+    // when we know we're inside a user gesture (unlockAudio()).
+    if (this.webAudioUnlockAttempted && !opts.force) return;
+    this.webAudioUnlockAttempted = true;
     try {
       const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
       if (!AC) return;
@@ -317,5 +391,60 @@ export class AudioManager {
     } catch (e) {
       // ignore
     }
+  }
+
+  private async primeElementForGesture(audio: HTMLAudioElement): Promise<void> {
+    // Some Android WebViews require each HTMLAudioElement to be started at least once
+    // within a user gesture before future non-gesture playback is allowed (e.g. from a game loop).
+    const prevMuted = audio.muted;
+    const prevVolume = audio.volume;
+    const prevTime = audio.currentTime;
+    try {
+      audio.muted = true;
+      audio.volume = 0;
+      audio.currentTime = 0;
+      try { audio.load(); } catch {}
+
+      const p = audio.play();
+      if (p && typeof (p as any).then === "function") {
+        await p.then(() => {}).catch(() => {});
+      }
+
+      try { audio.pause(); } catch {}
+      try { audio.currentTime = 0; } catch {}
+    } finally {
+      try { audio.muted = prevMuted; } catch {}
+      try { audio.volume = prevVolume; } catch {}
+      try { audio.currentTime = prevTime; } catch {}
+    }
+  }
+  /**
+   * Public method to attempt unlocking audio without starting playback.
+   * Useful to call on first user interaction so autoplay policies are satisfied.
+   */
+  public async unlockAudio(): Promise<void> {
+    // Unlock WebAudio (helps some WebViews) and prime HTMLAudio elements for effects.
+    await this.ensureAudioUnlocked({ force: true });
+
+    // Prime default effect sounds so they can later play from non-gesture code (game loop).
+    const effectSrcs = [
+      this.customEatUrl ?? AUDIO_FILES.eat,
+      this.customOverUrl ?? AUDIO_FILES.gameOver,
+      this.customPhaseUrl ?? AUDIO_FILES.phaseChange,
+      AUDIO_FILES.menuSelect,
+    ];
+
+    // Prime sequentially to avoid stressing the audio pipeline on slower devices.
+    for (const src of effectSrcs) {
+      try {
+        const a = this.loadAudio(src);
+        await this.primeElementForGesture(a);
+      } catch {
+        // ignore
+      }
+    }
+
+    // Mark that we've performed a user-gesture unlock + priming at least once.
+    this.hasUserUnlockedAudio = true;
   }
 }

@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
 import { ArrowLeft, Languages, Volume2, VolumeX, Sun, Moon, Monitor, Smartphone, Gamepad2, Upload, Trash2, RotateCcw } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
-import { useGlobalAudioManager } from "@/contexts/AudioManagerContext";
+import { useGlobalAudioManager, useAudioControls } from "@/contexts/AudioManagerContext";
 import { useTranslation } from "react-i18next";
 import type { AppTheme, Difficulty } from "@/types/game";
 
@@ -11,6 +11,7 @@ const SettingsScreen = () => {
   const { t } = useTranslation();
   const { settings, updateSettings, customAudio, setCustomAudio, resetAllCustomAudio } = useSettings();
   const audioManager = useGlobalAudioManager();
+  const { setSoundEnabled } = useAudioControls();
 
   // Função de vibração para mobile
   const vibrate = useCallback((ms: number = 50) => {
@@ -50,14 +51,8 @@ const SettingsScreen = () => {
             active={settings.musicOn}
             volume={settings.musicVolume}
             onToggle={() => {
-              const newMusicOn = !settings.musicOn;
-              updateSettings({ musicOn: newMusicOn });
-              // Controlar música imediatamente
-              if (newMusicOn) {
-                audioManager?.startMusic();
-              } else {
-                audioManager?.stopMusic();
-              }
+              // Only use the global audio control to toggle sound state.
+              setSoundEnabled(!settings.musicOn);
             }}
             onVolumeChange={(volume) => {
               updateSettings({ musicVolume: volume });

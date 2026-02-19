@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useSnakeGame } from "@/hooks/useSnakeGame";
 import { useSoundManager } from "@/hooks/useSoundManager";
-import { useGlobalAudioManager } from "@/contexts/AudioManagerContext";
 import { CELL_COUNT, MIN_CELL_SIZE, type BoardSize, type Direction, type SaveData } from "@/types/game";
 import GameCanvas from "@/components/GameCanvas";
 
@@ -29,7 +28,7 @@ const GameScreen = () => {
       over: customAudio.over,
       phase: customAudio.phase,
     });
-  const audioManager = useGlobalAudioManager();
+  // Audio is managed globally by AudioManagerProvider. Do not control it from screens.
 
   const vibrate = useCallback(
     (ms: number) => {
@@ -89,19 +88,8 @@ const GameScreen = () => {
     if (phaseAnnounce) playPhase();
   }, [phaseAnnounce, playPhase]);
 
-  // Pause/resume music sync
-  useEffect(() => {
-    if (gameState.isPaused) {
-      pauseMusic();
-    } else if (gameState.isRunning) {
-      resumeMusic();
-    }
-  }, [gameState.isPaused, gameState.isRunning, pauseMusic, resumeMusic]);
-
-  // Stop music on game over
-  useEffect(() => {
-    if (gameState.isGameOver) stopMusic();
-  }, [gameState.isGameOver, stopMusic]);
+  // Music should play continuously while enabled. Do not stop music on pause/gameover.
+  // Keep volume adjustments via settings through useSoundManager.
 
   // Start or resume game on mount (only once)
   useEffect(() => {
@@ -208,18 +196,8 @@ const GameScreen = () => {
       vibrate(20);
     }
 
-    // Tenta garantir que a música seja iniciada/desbloqueada após primeiro toque no celular.
-    // Chamar antes de `preventDefault()` para que o evento seja considerado um gesto do usuário
-    // pelo WebView/Android autoplay policy.
-    try {
-      if (settings.musicOn) {
-        // preferir usar audioManager direto para iniciar/desbloquejar
-        audioManager?.startMusic();
-      }
-    } catch {}
-
-    // Bloqueia comportamento padrão do navegador (scroll/zoom/pull-to-refresh)
-    // após tentarmos iniciar a música para que o toque seja visto como interação do usuário.
+    // Unlocking audio on first touch is handled globally by AudioManagerProvider.
+    // Prevent default to avoid scrolling behavior on mobile.
     e.preventDefault();
 
     // Esconde feedback rapidamente
@@ -267,7 +245,6 @@ const GameScreen = () => {
     if (gameState.isRunning && !gameState.isGameOver) {
       doSave();
     }
-    stopMusic();
     navigate("/menu");
   };
 

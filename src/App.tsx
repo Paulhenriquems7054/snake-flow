@@ -19,11 +19,11 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+  <TooltipProvider>
       <Toaster />
       <Sonner />
-      <AudioManagerProvider>
-        <SettingsProvider>
+      <SettingsProvider>
+        <AudioManagerProvider>
           <I18nextProvider i18n={i18n}>
             <BrowserRouter>
             <Routes>
@@ -37,8 +37,8 @@ const App = () => (
             </Routes>
           </BrowserRouter>
           </I18nextProvider>
-        </SettingsProvider>
-      </AudioManagerProvider>
+        </AudioManagerProvider>
+      </SettingsProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

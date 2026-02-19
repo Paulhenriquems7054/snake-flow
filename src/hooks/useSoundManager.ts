@@ -31,15 +31,7 @@ export function useSoundManager(
   }, [audioManager, custom]);
 
   // Start/stop music based on setting
-  useEffect(() => {
-    if (audioManager) {
-      if (musicOn) {
-        audioManager.startMusic();
-      } else {
-        audioManager.stopMusic();
-      }
-    }
-  }, [audioManager, musicOn]);
+  // Music start/stop is handled centrally by AudioManagerProvider.
 
   // Update volumes when they change
   useEffect(() => {
