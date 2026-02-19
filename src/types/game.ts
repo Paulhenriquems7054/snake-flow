@@ -107,17 +107,17 @@ export const DIFFICULTY_CONFIG: Record<Difficulty, { baseSpeed: number; speedInc
 
 export const GAME_THEMES: GameTheme[] = [
   { id: "classic", name: "Classic", bgColor: "#0a1628", snakeColor: "#22c55e", snakeHeadColor: "#4ade80", fruitColor: "#ef4444", gridColor: "#1a2744", hudBg: "#111d33", hudText: "#22c55e" },
-  { id: "ocean", name: "Ocean", bgColor: "#0c1929", snakeColor: "#06b6d4", snakeHeadColor: "#22d3ee", fruitColor: "#f59e0b", gridColor: "#152540", hudBg: "#0f1f35", hudText: "#06b6d4" },
-  { id: "lava", name: "Lava", bgColor: "#1a0a0a", snakeColor: "#f97316", snakeHeadColor: "#fb923c", fruitColor: "#a855f7", gridColor: "#2a1515", hudBg: "#1f0e0e", hudText: "#f97316" },
-  { id: "forest", name: "Forest", bgColor: "#0a1a0a", snakeColor: "#84cc16", snakeHeadColor: "#a3e635", fruitColor: "#ec4899", gridColor: "#152a15", hudBg: "#0e1f0e", hudText: "#84cc16" },
-  { id: "cyber", name: "Cyber", bgColor: "#0f0a1a", snakeColor: "#a855f7", snakeHeadColor: "#c084fc", fruitColor: "#14b8a6", gridColor: "#1a1530", hudBg: "#130e22", hudText: "#a855f7" },
-  { id: "desert", name: "Desert", bgColor: "#1a1508", snakeColor: "#eab308", snakeHeadColor: "#facc15", fruitColor: "#3b82f6", gridColor: "#2a2510", hudBg: "#1f1a0c", hudText: "#eab308" },
-  { id: "modern", name: "Modern", bgColor: "#E8F5E9", snakeColor: "#4CAF50", snakeHeadColor: "#66BB6A", fruitColor: "#FFD54F", gridColor: "#C8E6C9", hudBg: "#F1F8E9", hudText: "#2E7D32" },
+  { id: "ocean", name: "Ocean", bgColor: "#0f1419", snakeColor: "#06b6d4", snakeHeadColor: "#22d3ee", fruitColor: "#f59e0b", gridColor: "#1a252f", hudBg: "#0f1f35", hudText: "#06b6d4" },
+  { id: "lava", name: "Lava", bgColor: "#2d1813", snakeColor: "#f97316", snakeHeadColor: "#fb923c", fruitColor: "#a855f7", gridColor: "#3d241e", hudBg: "#1f0e0e", hudText: "#f97316" },
+  { id: "forest", name: "Forest", bgColor: "#1a2e1a", snakeColor: "#84cc16", snakeHeadColor: "#a3e635", fruitColor: "#ec4899", gridColor: "#2a3d2a", hudBg: "#0e1f0e", hudText: "#84cc16" },
+  { id: "cyber", name: "Cyber", bgColor: "#1a1a2e", snakeColor: "#a855f7", snakeHeadColor: "#c084fc", fruitColor: "#14b8a6", gridColor: "#2a2a3e", hudBg: "#130e22", hudText: "#a855f7" },
+  { id: "desert", name: "Desert", bgColor: "#3d2b1f", snakeColor: "#eab308", snakeHeadColor: "#facc15", fruitColor: "#3b82f6", gridColor: "#4d3a2f", hudBg: "#1f1a0c", hudText: "#eab308" },
+  { id: "modern", name: "Modern", bgColor: "#f0f9f0", snakeColor: "#4CAF50", snakeHeadColor: "#66BB6A", fruitColor: "#FFD54F", gridColor: "#e0f0e0", hudBg: "#F1F8E9", hudText: "#2E7D32" },
   // Extra palettes for stronger alternation every 3 phases
-  { id: "neon", name: "Neon", bgColor: "#07070b", snakeColor: "#22c55e", snakeHeadColor: "#86efac", fruitColor: "#f43f5e", gridColor: "#1b1b24", hudBg: "#0d0d14", hudText: "#22c55e" },
-  { id: "ice", name: "Ice", bgColor: "#071a26", snakeColor: "#38bdf8", snakeHeadColor: "#7dd3fc", fruitColor: "#a78bfa", gridColor: "#123247", hudBg: "#0b2231", hudText: "#38bdf8" },
-  { id: "sunset", name: "Sunset", bgColor: "#190b18", snakeColor: "#f472b6", snakeHeadColor: "#f9a8d4", fruitColor: "#f59e0b", gridColor: "#2c1230", hudBg: "#1f0d23", hudText: "#f472b6" },
-  { id: "midnight", name: "Midnight", bgColor: "#05060a", snakeColor: "#22d3ee", snakeHeadColor: "#67e8f9", fruitColor: "#eab308", gridColor: "#121422", hudBg: "#0b0d16", hudText: "#67e8f9" },
+  { id: "neon", name: "Neon", bgColor: "#0f0f23", snakeColor: "#22c55e", snakeHeadColor: "#86efac", fruitColor: "#f43f5e", gridColor: "#1f1f33", hudBg: "#0d0d14", hudText: "#22c55e" },
+  { id: "ice", name: "Ice", bgColor: "#0f1926", snakeColor: "#38bdf8", snakeHeadColor: "#7dd3fc", fruitColor: "#a78bfa", gridColor: "#1f2936", hudBg: "#0b2231", hudText: "#38bdf8" },
+  { id: "sunset", name: "Sunset", bgColor: "#2d1b2d", snakeColor: "#f472b6", snakeHeadColor: "#f9a8d4", fruitColor: "#f59e0b", gridColor: "#3d2b3d", hudBg: "#1f0d23", hudText: "#f472b6" },
+  { id: "midnight", name: "Midnight", bgColor: "#0a0a14", snakeColor: "#22d3ee", snakeHeadColor: "#67e8f9", fruitColor: "#eab308", gridColor: "#1a1a24", hudBg: "#0b0d16", hudText: "#67e8f9" },
 ];
 
 export const DEFAULT_SETTINGS: Settings = {

@@ -20,6 +20,9 @@ const GameScreen = () => {
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const [touchFeedback, setTouchFeedback] = useState<{ x: number; y: number } | null>(null);
   const isMobile = typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeTriggeredRef = useRef(false);
+  const lastSwipeDirRef = useRef<Direction | null>(null);
 
   const { playEat, playOver, playPhase, pauseMusic, resumeMusic, stopMusic } =
     useSoundManager(settings.musicOn, settings.musicVolume, settings.soundEffectsOn, settings.soundEffectsVolume, {
@@ -94,6 +97,26 @@ const GameScreen = () => {
 
   // Music should play continuously while enabled. Do not stop music on pause/gameover.
   // Keep volume adjustments via settings through useSoundManager.
+
+  // Do not apply global "dark mode" on the Game screen.
+  // The game palette is controlled by phase themes, not by the app theme.
+  useEffect(() => {
+    const root = document.documentElement;
+    const hadDark = root.classList.contains("dark");
+    if (hadDark) root.classList.remove("dark");
+    return () => {
+      if (settings.appTheme === "dark") root.classList.add("dark");
+      else root.classList.remove("dark");
+    };
+  }, [settings.appTheme]);
+
+  // Force background update when theme changes
+  useEffect(() => {
+    const gameContainer = document.querySelector('.fixed.inset-0.flex.flex-col.select-none') as HTMLElement;
+    if (gameContainer) {
+      gameContainer.style.backgroundColor = currentTheme.bgColor;
+    }
+  }, [currentTheme.bgColor, gameState.themeIndex]);
 
   // Start or resume game on mount (only once)
   useEffect(() => {
@@ -171,34 +194,9 @@ const GameScreen = () => {
 
     const touch = e.touches[0];
     setTouchFeedback({ x: touch.clientX, y: touch.clientY });
-
-    const gameArea = gameAreaRef.current;
-    if (!gameArea) return;
-
-    const rect = gameArea.getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-    const w = rect.width;
-    const h = rect.height;
-
-    // Direção baseada em "quadrantes" relativos ao centro:
-    // - Se o toque estiver mais acima/abaixo do centro do que à esquerda/direita, vai para cima/baixo
-    // - Caso contrário, vai para esquerda/direita
-    const dx = x - w / 2;
-    const dy = y - h / 2;
-    let dir: Direction;
-    if (Math.abs(dx) > Math.abs(dy)) {
-      dir = dx < 0 ? "LEFT" : "RIGHT";
-    } else {
-      dir = dy < 0 ? "UP" : "DOWN";
-    }
-
-    // Regras de segurança: a lógica de changeDirection já ignora inversões imediatas
-    changeDirection(dir);
-    vibrate(20);
-
-    // Unlocking audio on first touch is handled globally by AudioManagerProvider.
-    // Prevent default to avoid scrolling behavior on mobile.
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    swipeTriggeredRef.current = false;
+    lastSwipeDirRef.current = null;
 
     // Esconde feedback rapidamente
     setTimeout(() => setTouchFeedback(null), 120);
@@ -212,6 +210,33 @@ const GameScreen = () => {
       return; // Permite que o botão receba o evento normalmente
     }
     e.preventDefault();
+
+    if (!isMobile) return;
+    const start = touchStartRef.current;
+    if (!start) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    const threshold = 18; // px - small but intentional swipe
+
+    if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return;
+
+    let dir: Direction;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      dir = dx < 0 ? "LEFT" : "RIGHT";
+    } else {
+      dir = dy < 0 ? "UP" : "DOWN";
+    }
+
+    if (lastSwipeDirRef.current === dir) return;
+    lastSwipeDirRef.current = dir;
+    swipeTriggeredRef.current = true;
+
+    changeDirection(dir);
+    vibrate(20);
+
+    // Allow consecutive swipes by resetting the start point
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
     // Verifica se o toque foi em um botão - se sim, não interfere
@@ -221,6 +246,35 @@ const GameScreen = () => {
     }
     e.preventDefault();
     setTouchFeedback(null);
+
+    if (!isMobile) return;
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+
+    // If user swiped, direction already changed during move.
+    if (swipeTriggeredRef.current) return;
+    if (!start) return;
+
+    // Tap-to-direct: choose direction based on tap position relative to game area center.
+    const gameArea = gameAreaRef.current;
+    if (!gameArea) return;
+    const rect = gameArea.getBoundingClientRect();
+    const x = start.x - rect.left;
+    const y = start.y - rect.top;
+    const w = rect.width;
+    const h = rect.height;
+
+    const dx = x - w / 2;
+    const dy = y - h / 2;
+    let dir: Direction;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      dir = dx < 0 ? "LEFT" : "RIGHT";
+    } else {
+      dir = dy < 0 ? "UP" : "DOWN";
+    }
+
+    changeDirection(dir);
+    vibrate(20);
   };
 
   const doSave = useCallback(() => {
@@ -257,6 +311,7 @@ const GameScreen = () => {
     <div
       className="fixed inset-0 flex flex-col select-none"
       style={{ backgroundColor: currentTheme.bgColor, touchAction: "none" }}
+      key={`theme-${gameState.themeIndex}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
