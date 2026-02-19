@@ -147,7 +147,7 @@ const GameCanvas = ({ gameState, theme, boardSize }: Props) => {
       }
 
       // Snake body - all segments as circles
-      drawSnake(ctx, gameState.snake, mm.cellW, mm.cellH, theme.snakeColor);
+      drawSnake(ctx, gameState.snake, mm.cellW, mm.cellH, theme.snakeColor, theme.snakeHeadColor);
 
       // Fruit (circle)
       drawFood(ctx, gameState.fruit, mm.cellW, mm.cellH, theme.fruitColor);
@@ -230,18 +230,29 @@ function drawBoard(ctx: CanvasRenderingContext2D, width: number, height: number,
   ctx.fill();
 }
 
-function drawSnake(ctx: CanvasRenderingContext2D, snake: Position[], cellW: number, cellH: number, snakeColor: string) {
-  ctx.fillStyle = snakeColor;
+function drawSnake(
+  ctx: CanvasRenderingContext2D,
+  snake: Position[],
+  cellW: number,
+  cellH: number,
+  snakeColor: string,
+  snakeHeadColor: string
+) {
   ctx.imageSmoothingEnabled = true;
 
-  snake.forEach(segment => {
+  snake.forEach((segment, idx) => {
     const cx = segment.x * cellW + cellW / 2;
     const cy = segment.y * cellH + cellH / 2;
-    const radius = Math.min(cellW, cellH) / 2.3;
+    const base = Math.min(cellW, cellH);
+    const radius = (idx === 0 ? base / 2.1 : base / 2.3);
 
+    ctx.fillStyle = idx === 0 ? snakeHeadColor : snakeColor;
+    ctx.shadowColor = ctx.fillStyle;
+    ctx.shadowBlur = idx === 0 ? 10 : 4;
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
+    ctx.shadowBlur = 0;
   });
 }
 
@@ -253,9 +264,12 @@ function drawFood(ctx: CanvasRenderingContext2D, food: Position, cellW: number, 
   const cy = food.y * cellH + cellH / 2;
   const radius = Math.min(cellW, cellH) / 2.5;
 
+  ctx.shadowColor = foodColor;
+  ctx.shadowBlur = 10;
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.fill();
+  ctx.shadowBlur = 0;
 }
 
 export default GameCanvas;

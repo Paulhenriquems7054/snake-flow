@@ -1,6 +1,18 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
+function getInitialLanguage(): "en" | "pt" {
+  try {
+    if (typeof window === "undefined") return "pt";
+    const raw = window.localStorage?.getItem("snake-flow-settings");
+    if (!raw) return "pt";
+    const parsed = JSON.parse(raw);
+    return parsed?.language === "pt" || parsed?.language === "en" ? parsed.language : "pt";
+  } catch {
+    return "pt";
+  }
+}
+
 i18n
   .use(initReactI18next)
   .init({
@@ -35,6 +47,15 @@ i18n
           "English": "English",
           "Music": "Music",
           "Sound Effects": "Sound Effects",
+          "Game size (zoom)": "Game size (zoom)",
+          "Game Theme": "Game Theme",
+          "Invalid audio file. Max 10MB. Supported: mp3, ogg, wav, m4a, aac.": "Invalid audio file. Max 10MB. Supported: mp3, ogg, wav, m4a, aac.",
+          "Increase zoom": "Increase zoom",
+          "Decrease zoom": "Decrease zoom",
+          "Version": "Version",
+          "Oops! Page not found": "Oops! Page not found",
+          "Return to Home": "Return to Home",
+          "Increase to make the snake/fruit/grid bigger. Applies next match.": "Increase to make the snake/fruit/grid bigger. Applies next match.",
           "Vibration": "Vibration",
           "App Theme": "App Theme",
           "Difficulty": "Difficulty",
@@ -95,6 +116,15 @@ i18n
           "English": "Inglês",
           "Music": "Música",
           "Sound Effects": "Efeitos Sonoros",
+          "Game size (zoom)": "Tamanho do jogo (zoom)",
+          "Game Theme": "Tema do jogo",
+          "Invalid audio file. Max 10MB. Supported: mp3, ogg, wav, m4a, aac.": "Arquivo de áudio inválido. Máx 10MB. Suporte: mp3, ogg, wav, m4a, aac.",
+          "Increase zoom": "Aumentar zoom",
+          "Decrease zoom": "Diminuir zoom",
+          "Version": "Versão",
+          "Oops! Page not found": "Ops! Página não encontrada",
+          "Return to Home": "Voltar para o início",
+          "Increase to make the snake/fruit/grid bigger. Applies next match.": "Aumente para deixar a cobra/fruta/grade maiores. Aplica na próxima partida.",
           "Vibration": "Vibração",
           "App Theme": "Tema do Aplicativo",
           "Difficulty": "Dificuldade",
@@ -126,7 +156,7 @@ i18n
         }
       }
     },
-    lng: "en", // Idioma padrão
+    lng: getInitialLanguage(), // Idioma inicial (sync) para evitar "flash" em inglês
     fallbackLng: "en",
 
     interpolation: {

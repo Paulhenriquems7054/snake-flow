@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 const CreditsScreen = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const version = "1.0.0";
 
   return (
     <div className="fixed inset-0 flex flex-col bg-background">
@@ -21,7 +22,7 @@ const CreditsScreen = () => {
           <h2 className="font-game text-2xl neon-text tracking-wider">SNAKE FLOW</h2>
           <div className="space-y-1 text-muted-foreground text-sm">
             <p>{t("Developed by")} PHM</p>
-            <p className="font-semibold text-foreground">Version 1.0.0</p>
+            <p className="font-semibold text-foreground">{t("Version")} {version}</p>
             <p>2026</p>
           </div>
         </div>

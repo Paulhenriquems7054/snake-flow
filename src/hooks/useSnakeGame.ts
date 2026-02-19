@@ -58,7 +58,7 @@ function createInitialState(cols: number, rows: number): GameState {
     isRunning: false,
     isPaused: false,
     isGameOver: false,
-    themeIndex: 6, // Modern theme
+    themeIndex: 0, // Start from first palette; auto-cycles every 3 phases
   };
 }
 

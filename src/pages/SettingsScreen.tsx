@@ -1,9 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
-import { ArrowLeft, Languages, Volume2, VolumeX, Sun, Moon, Monitor, Smartphone, Gamepad2, Upload, Trash2, RotateCcw } from "lucide-react";
+import { ArrowLeft, Languages, Volume2, VolumeX, Sun, Moon, Monitor, Smartphone, Gamepad2, Upload, Trash2, RotateCcw, Minus, Plus } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useGlobalAudioManager, useAudioControls } from "@/contexts/AudioManagerContext";
 import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import type { AppTheme, Difficulty } from "@/types/game";
 
 const SettingsScreen = () => {
@@ -82,6 +83,12 @@ const SettingsScreen = () => {
                 audioManager?.playMenuSelectSound();
               }
             }}
+          />
+
+          <ZoomRow
+            label={t("Game size (zoom)")}
+            value={settings.gameZoom}
+            onChange={(v) => updateSettings({ gameZoom: v })}
           />
         </Section>
 
@@ -180,7 +187,7 @@ const SettingsScreen = () => {
         </Section>
 
         {/* Game Theme */}
-        <Section title="🎨 Game Theme">
+        <Section title={`🎨 ${t("Game Theme")}`}>
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card border border-border">
             <Gamepad2 className="w-5 h-5 text-primary" />
             <div>
@@ -358,7 +365,7 @@ function handleAudioSelect(
   const maxSize = 10 * 1024 * 1024; // 10MB
   const allowed = ["audio/mpeg", "audio/ogg", "audio/wav", "audio/mp4", "audio/aac", "audio/x-m4a"];
   if (file.size > maxSize || (file.type && !allowed.includes(file.type))) {
-    alert("Invalid audio file. Max 10MB. Supported: mp3, ogg, wav, m4a, aac.");
+    alert(i18n.t("Invalid audio file. Max 10MB. Supported: mp3, ogg, wav, m4a, aac."));
     return;
   }
   const url = URL.createObjectURL(file);
@@ -409,6 +416,71 @@ function CustomAudioRow({
           <Trash2 className="w-4 h-4" /> {t("Clear")}
         </button>
       </div>
+    </div>
+  );
+}
+
+function clampZoom(v: number) {
+  if (!isFinite(v)) return 1;
+  return Math.max(0.8, Math.min(2, v));
+}
+
+function ZoomRow({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const { t } = useTranslation();
+  const zoom = clampZoom(typeof value === "number" ? value : 1);
+  const percent = Math.round(zoom * 100);
+
+  return (
+    <div className="flex flex-col gap-2 px-4 py-3 rounded-xl bg-card border border-border">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Monitor className="w-5 h-5 text-primary" />
+          <span className="text-sm font-medium text-foreground">{label}</span>
+        </div>
+        <span className="text-xs text-muted-foreground tabular-nums">{percent}%</span>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => onChange(clampZoom(Math.round((zoom - 0.1) * 10) / 10))}
+          className="p-2 rounded-lg border border-border hover:border-primary/30 transition-colors"
+          aria-label={t("Decrease zoom")}
+        >
+          <Minus className="w-4 h-4 text-muted-foreground" />
+        </button>
+
+        <input
+          type="range"
+          min="0.8"
+          max="2"
+          step="0.1"
+          value={zoom}
+          onChange={(e) => onChange(clampZoom(parseFloat(e.target.value)))}
+          className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer slider"
+        />
+
+        <button
+          type="button"
+          onClick={() => onChange(clampZoom(Math.round((zoom + 0.1) * 10) / 10))}
+          className="p-2 rounded-lg border border-border hover:border-primary/30 transition-colors"
+          aria-label={t("Increase zoom")}
+        >
+          <Plus className="w-4 h-4 text-muted-foreground" />
+        </button>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground">
+        {t("Increase to make the snake/fruit/grid bigger. Applies next match.")}
+      </p>
     </div>
   );
 }

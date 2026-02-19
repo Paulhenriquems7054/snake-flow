@@ -60,8 +60,12 @@ const GameScreen = () => {
       const w = el.clientWidth;
       const h = el.clientHeight;
       if (!w || !h) return;
-      const cols = Math.max(8, Math.floor(Math.min(w / MIN_CELL_SIZE, 80)));
-      const rows = Math.max(8, Math.floor(Math.min(h / MIN_CELL_SIZE, 80)));
+      const rawZoom = typeof settings.gameZoom === "number" ? settings.gameZoom : 1;
+      const zoom = Math.max(0.8, Math.min(2, isFinite(rawZoom) ? rawZoom : 1));
+      // Bigger zoom => bigger cells => fewer cols/rows => snake/fruit/grid appear larger.
+      const minCellSize = MIN_CELL_SIZE * zoom;
+      const cols = Math.max(8, Math.floor(Math.min(w / minCellSize, 80)));
+      const rows = Math.max(8, Math.floor(Math.min(h / minCellSize, 80)));
       setBoardSize((prev) => (prev.cols === cols && prev.rows === rows ? prev : { cols, rows }));
       setBoardMeasured(true);
     };
@@ -70,7 +74,7 @@ const GameScreen = () => {
     const ro = new ResizeObserver(calc);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [gameInitialized]);
+  }, [gameInitialized, settings.gameZoom]);
 
   const {
     gameState,
@@ -320,7 +324,7 @@ const GameScreen = () => {
         {phaseAnnounce && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
             <div className="animate-phase-announce font-game text-4xl font-bold" style={{ color: currentTheme.hudText, textShadow: `0 0 20px ${currentTheme.snakeColor}` }}>
-              PHASE {phaseAnnounce}
+              {t("Phase")} {phaseAnnounce}
             </div>
           </div>
         )}

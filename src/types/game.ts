@@ -4,7 +4,18 @@ export type Difficulty = "easy" | "medium" | "hard";
 
 export type AppTheme = "light" | "dark";
 
-export type GameThemeId = "classic" | "ocean" | "lava" | "forest" | "cyber" | "desert" | "modern";
+export type GameThemeId =
+  | "classic"
+  | "ocean"
+  | "lava"
+  | "forest"
+  | "cyber"
+  | "desert"
+  | "modern"
+  | "neon"
+  | "ice"
+  | "sunset"
+  | "midnight";
 
 export type Language = "en" | "pt";
 
@@ -62,6 +73,7 @@ export interface Settings {
   musicVolume: number; // 0-1
   soundEffectsOn: boolean;
   soundEffectsVolume: number; // 0-1
+  gameZoom: number; // 0.8-2.0 (multiplies MIN_CELL_SIZE -> bigger zoom = bigger cells)
   appTheme: AppTheme;
   gameThemeMode: "auto";
   vibrationOn: boolean;
@@ -101,6 +113,11 @@ export const GAME_THEMES: GameTheme[] = [
   { id: "cyber", name: "Cyber", bgColor: "#0f0a1a", snakeColor: "#a855f7", snakeHeadColor: "#c084fc", fruitColor: "#14b8a6", gridColor: "#1a1530", hudBg: "#130e22", hudText: "#a855f7" },
   { id: "desert", name: "Desert", bgColor: "#1a1508", snakeColor: "#eab308", snakeHeadColor: "#facc15", fruitColor: "#3b82f6", gridColor: "#2a2510", hudBg: "#1f1a0c", hudText: "#eab308" },
   { id: "modern", name: "Modern", bgColor: "#E8F5E9", snakeColor: "#4CAF50", snakeHeadColor: "#66BB6A", fruitColor: "#FFD54F", gridColor: "#C8E6C9", hudBg: "#F1F8E9", hudText: "#2E7D32" },
+  // Extra palettes for stronger alternation every 3 phases
+  { id: "neon", name: "Neon", bgColor: "#07070b", snakeColor: "#22c55e", snakeHeadColor: "#86efac", fruitColor: "#f43f5e", gridColor: "#1b1b24", hudBg: "#0d0d14", hudText: "#22c55e" },
+  { id: "ice", name: "Ice", bgColor: "#071a26", snakeColor: "#38bdf8", snakeHeadColor: "#7dd3fc", fruitColor: "#a78bfa", gridColor: "#123247", hudBg: "#0b2231", hudText: "#38bdf8" },
+  { id: "sunset", name: "Sunset", bgColor: "#190b18", snakeColor: "#f472b6", snakeHeadColor: "#f9a8d4", fruitColor: "#f59e0b", gridColor: "#2c1230", hudBg: "#1f0d23", hudText: "#f472b6" },
+  { id: "midnight", name: "Midnight", bgColor: "#05060a", snakeColor: "#22d3ee", snakeHeadColor: "#67e8f9", fruitColor: "#eab308", gridColor: "#121422", hudBg: "#0b0d16", hudText: "#67e8f9" },
 ];
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -108,6 +125,7 @@ export const DEFAULT_SETTINGS: Settings = {
   musicVolume: 0.3,
   soundEffectsOn: true,
   soundEffectsVolume: 0.6,
+  gameZoom: 1,
   appTheme: "dark",
   gameThemeMode: "auto",
   vibrationOn: true,
