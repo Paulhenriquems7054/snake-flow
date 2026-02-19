@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useCallback } from "react";
+import { useCallback, useId } from "react";
 import { ArrowLeft, Languages, Volume2, VolumeX, Sun, Moon, Monitor, Smartphone, Gamepad2, Upload, Trash2, RotateCcw, Minus, Plus } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useGlobalAudioManager, useAudioControls } from "@/contexts/AudioManagerContext";
@@ -394,7 +394,7 @@ function CustomAudioRow({
   onClear: () => void;
   t: (key: string) => string;
 }) {
-  const inputId = Math.random().toString(36).slice(2);
+  const inputId = useId();
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-card border border-border">
       <div>

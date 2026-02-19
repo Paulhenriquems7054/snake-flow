@@ -11,7 +11,7 @@ type AudioContextValue = {
 const AudioManagerContext = createContext<AudioContextValue | null>(null);
 
 export function AudioManagerProvider({ children }: { children: ReactNode }) {
-  const { settings, updateSettings } = useSettings();
+  const { settings, updateSettings, customAudio } = useSettings();
   const [manager, setManager] = useState<AudioManager | null>(null);
 
   // Create single AudioManager instance
@@ -54,6 +54,16 @@ export function AudioManagerProvider({ children }: { children: ReactNode }) {
       manager.stopMusic();
     }
   }, [manager, settings.musicOn]);
+
+  // Keep custom audio (session) in sync with the global manager so "Restore defaults"
+  // immediately takes effect even outside the Game screen.
+  useEffect(() => {
+    if (!manager) return;
+    manager.setCustomMusic(customAudio.music ?? null);
+    manager.setCustomEffect("eat", customAudio.eat ?? null);
+    manager.setCustomEffect("over", customAudio.over ?? null);
+    manager.setCustomEffect("phase", customAudio.phase ?? null);
+  }, [manager, customAudio.music, customAudio.eat, customAudio.over, customAudio.phase]);
 
   // Ensure music restarts on SPA navigation (e.g. /menu -> /game).
   useEffect(() => {

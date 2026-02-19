@@ -7,6 +7,7 @@ import { useSnakeGame } from "@/hooks/useSnakeGame";
 import { useSoundManager } from "@/hooks/useSoundManager";
 import { CELL_COUNT, MIN_CELL_SIZE, type BoardSize, type Direction, type SaveData } from "@/types/game";
 import GameCanvas from "@/components/GameCanvas";
+import { setJsonBoth } from "@/utils/persist";
 
 const GameScreen = () => {
   const navigate = useNavigate();
@@ -141,7 +142,7 @@ const GameScreen = () => {
 
   // Auto-save on app exit (beforeunload)
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const persistSnapshot = () => {
       if (gameState.isRunning && !gameState.isGameOver) {
         const snapshot = getSnapshot();
         const data: SaveData = {
@@ -149,11 +150,25 @@ const GameScreen = () => {
           difficulty: settings.difficulty,
           timestamp: Date.now(),
         };
-        localStorage.setItem("snake-flow-save", JSON.stringify(data));
+        setJsonBoth("snake-flow-save", data);
       }
     };
+
+    const handleBeforeUnload = () => persistSnapshot();
+    const handlePageHide = () => persistSnapshot();
+    const handleVisibility = () => {
+      if (document.hidden) persistSnapshot();
+    };
+
     window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handlePageHide);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handlePageHide);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [gameState.isRunning, gameState.isGameOver, getSnapshot, settings.difficulty]);
 
 

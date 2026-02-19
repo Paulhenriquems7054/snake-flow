@@ -1,12 +1,23 @@
 // Audio files served from Vite `public/` folder.
-// IMPORTANT: these paths must match filenames EXACTLY (use unaccented, no spaces)
-// to avoid URL encoding issues on some hosts and Android WebViews.
+//
+// IMPORTANT:
+// - Android/WebView file serving can be case-sensitive. These paths must match filenames EXACTLY.
+// - Use BASE_URL so assets also work when the app is hosted under a sub-path.
+const BASE_URL = (import.meta as any)?.env?.BASE_URL ?? "/";
+function publicAsset(path: string) {
+  const p = path.startsWith("/") ? path.slice(1) : path;
+  const base = typeof BASE_URL === "string" ? BASE_URL : "/";
+  return `${base}${base.endsWith("/") ? "" : "/"}${p}`;
+}
+
 const AUDIO_FILES = {
-  eat: "/come-fruta.mp3",
-  gameOver: "/perde-afase.mp3",
-  phaseChange: "/muda-de-fase.mp3",
-  music: "/musica.mp3",
-  menuSelect: "/muda-de-opcao.mp3",
+  eat: publicAsset("come-fruta.mp3"),
+  gameOver: publicAsset("perde-afase.mp3"),
+  // User-provided default in `public/`: "Muda-dafase.mp3"
+  // (keep exact casing to match the actual filename on device builds)
+  phaseChange: publicAsset("Muda-dafase.mp3"),
+  music: publicAsset("musica.mp3"),
+  menuSelect: publicAsset("muda-de-opcao.mp3"),
 } as const;
 
 // Background music tracks (fallback rotation). Keep only files that exist in `public/`.
@@ -165,6 +176,15 @@ export class AudioManager {
     this.customMusicUrl = next;
     this.isCustomMusic = !!next;
 
+    // If we had an existing music element, ensure the next start uses the correct track.
+    // This prevents "stuck" custom music after restoring defaults while music is paused.
+    if (!this.isMusicPlaying && this.musicAudio) {
+      try {
+        this.musicAudio.pause();
+      } catch {}
+      this.musicAudio = null;
+    }
+
     // If music is currently playing, restart with new music
     if (this.isMusicPlaying) {
       this.stopMusic();
@@ -175,14 +195,18 @@ export class AudioManager {
     const next = url ?? null;
     if (kind === "eat") {
       if (this.customEatUrl === next) return;
+      // Drop any cached audio element for the old custom URL (blob URLs may be revoked).
+      if (this.customEatUrl) this.audioCache.delete(this.customEatUrl);
       this.customEatUrl = next;
     }
     if (kind === "over") {
       if (this.customOverUrl === next) return;
+      if (this.customOverUrl) this.audioCache.delete(this.customOverUrl);
       this.customOverUrl = next;
     }
     if (kind === "phase") {
       if (this.customPhaseUrl === next) return;
+      if (this.customPhaseUrl) this.audioCache.delete(this.customPhaseUrl);
       this.customPhaseUrl = next;
     }
   }

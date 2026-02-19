@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { type Settings, type RecordData, type SaveData, DEFAULT_SETTINGS } from "@/types/game";
 import i18n from "@/i18n";
+import { getLocalItem, getPreferenceItem, removeBoth, setJsonBoth } from "@/utils/persist";
 
 interface SettingsContextType {
   settings: Settings;
@@ -28,7 +29,7 @@ const SAVE_KEY = "snake-flow-save";
 
 function loadFromStorage<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = getLocalItem(key);
     return raw ? JSON.parse(raw) : fallback;
   } catch {
     return fallback;
@@ -55,7 +56,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    setJsonBoth(SETTINGS_KEY, settings);
     applyAppTheme(settings.appTheme);
   }, [settings]);
 
@@ -65,16 +66,47 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [settings.language]);
 
   useEffect(() => {
-    localStorage.setItem(RECORD_KEY, JSON.stringify(record));
+    setJsonBoth(RECORD_KEY, record);
   }, [record]);
 
   useEffect(() => {
     if (saveData) {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+      setJsonBoth(SAVE_KEY, saveData);
     } else {
-      localStorage.removeItem(SAVE_KEY);
+      removeBoth(SAVE_KEY);
     }
   }, [saveData]);
+
+  // Hydrate from Capacitor Preferences if localStorage is empty/cleared on device.
+  useEffect(() => {
+    const hydrate = async () => {
+      try {
+        const localSettings = getLocalItem(SETTINGS_KEY);
+        if (!localSettings) {
+          const pref = await getPreferenceItem(SETTINGS_KEY);
+          if (pref) {
+            const parsed = JSON.parse(pref) as Partial<Settings>;
+            setSettings((prev) => ({ ...prev, ...parsed }));
+          }
+        }
+
+        const localRecord = getLocalItem(RECORD_KEY);
+        if (!localRecord) {
+          const pref = await getPreferenceItem(RECORD_KEY);
+          if (pref) setRecord(JSON.parse(pref) as RecordData);
+        }
+
+        const localSave = getLocalItem(SAVE_KEY);
+        if (!localSave) {
+          const pref = await getPreferenceItem(SAVE_KEY);
+          if (pref) setSaveDataState(JSON.parse(pref) as SaveData);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    void hydrate();
+  }, []);
 
   const updateSettings = (partial: Partial<Settings>) => {
     setSettings((prev) => ({ ...prev, ...partial }));
