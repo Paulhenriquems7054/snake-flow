@@ -18,6 +18,23 @@ interface Props {
   boardSize: BoardSize;
 }
 
+function getBackgroundColor(level: number) {
+  const stageIndex = Math.floor(level / 3);
+
+  const backgrounds = [
+    "#0F172A", // Azul noite profundo
+    "#111827", // Grafite azulado
+    "#1E293B", // Azul aço
+    "#0B3C49", // Azul oceano
+    "#1B4332", // Verde floresta escuro
+    "#2D1E2F", // Roxo profundo
+    "#3A0CA3", // Roxo vibrante escuro
+    "#3D0000", // Vermelho vinho escuro
+  ];
+
+  return backgrounds[stageIndex % backgrounds.length];
+}
+
 const GameCanvas = ({ gameState, theme, boardSize }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -127,8 +144,11 @@ const GameCanvas = ({ gameState, theme, boardSize }: Props) => {
       // Save context state
       ctx.save();
 
-      // Background with rounded corners
-      drawBoard(ctx, mm.width, mm.height, 0, theme.bgColor);
+      // Dynamic background (phase-based). Must not depend on CSS/div background.
+      const currentLevel = typeof gameState.phase === "number" ? gameState.phase : 1;
+      const bg = getBackgroundColor(currentLevel);
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Grid
       ctx.strokeStyle = theme.gridColor;
@@ -146,11 +166,11 @@ const GameCanvas = ({ gameState, theme, boardSize }: Props) => {
         ctx.stroke();
       }
 
-      // Snake body - all segments as circles
-      drawSnake(ctx, gameState.snake, mm.cellW, mm.cellH, theme.snakeColor, theme.snakeHeadColor);
+      // Fruit (circle) — must draw before snake
+      drawFood(ctx, gameState.fruit, mm.cellW, mm.cellH, theme.fruitColor, bg);
 
-      // Fruit (circle)
-      drawFood(ctx, gameState.fruit, mm.cellW, mm.cellH, theme.fruitColor, theme.bgColor);
+      // Snake body - all segments as circles (draw after fruit)
+      drawSnake(ctx, gameState.snake, mm.cellW, mm.cellH, theme.snakeColor, theme.snakeHeadColor);
 
       // Particles
       const particles = particlesRef.current;
